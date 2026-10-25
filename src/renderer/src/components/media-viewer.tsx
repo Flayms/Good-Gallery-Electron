@@ -1,14 +1,23 @@
-import { mediaUrl } from '@shared/media-urls'
+import { mediaUrl, thumbUrl } from '@shared/media-urls'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { ChevronLeftIcon, ChevronRightIcon, FolderOpenIcon, InfoIcon, XIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { type CSSProperties, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { MediaContextMenu } from '@/components/media-context-menu'
-import { MediaInfo } from '@/components/media-info'
+import { type MediaDetails, MediaInfo, Rating } from '@/components/media-info'
 import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
 import { ZoomableImage } from '@/components/zoomable-image'
+import { useIdle } from '@/hooks/use-idle'
+import { ambientGlassStyle } from '@/lib/ambient'
+import { formatDateTime } from '@/lib/format'
+import { controlsHidden } from '@/lib/idle'
+import { thumbhashDataUrl } from '@/lib/thumbhash'
 import { trpc } from '@/lib/trpc'
 import { cn } from '@/lib/utils'
+
+/** The controls step aside after this long without pointer movement or key presses (REQ-013-10). */
+const IDLE_MS = 2500
 
 /** A gallery neighbour; `kind` is unknown until its data is loaded. */
 export interface MediaNeighbour {
@@ -18,6 +27,42 @@ export interface MediaNeighbour {
 
 function preload(item: MediaNeighbour | undefined) {
   if (item?.kind === 'image') new Image().src = mediaUrl(item.id)
+}
+
+interface BackdropLayer {
+  id: number
+  placeholder?: string
+}
+
+/**
+ * The shown item itself, blurred and darkened, fills the window behind it (REQ-013-09). The previous item stays
+ * underneath while the next one fades in.
+ */
+function ViewerBackdrop({ item }: { item: MediaDetails | undefined }) {
+  const [layers, setLayers] = useState<BackdropLayer[]>([])
+  const id = item?.id
+  const thumbhash = item?.thumbhash
+  useEffect(() => {
+    if (id === undefined) return
+    const layer = { id, placeholder: thumbhash ? thumbhashDataUrl(thumbhash) : undefined }
+    setLayers((previous) => [...previous.filter((other) => other.id !== id).slice(-1), layer])
+  }, [id, thumbhash])
+
+  return (
+    <div className="absolute inset-0 overflow-hidden" aria-hidden>
+      {layers.map((layer) => (
+        <div
+          key={layer.id}
+          className="absolute -inset-24 animate-in bg-center bg-cover blur-[60px] brightness-35 saturate-120 fade-in duration-(--duration-base)"
+          style={{
+            backgroundImage: [`url("${thumbUrl(layer.id, 400)}")`, layer.placeholder && `url("${layer.placeholder}")`]
+              .filter(Boolean)
+              .join(', '),
+          }}
+        />
+      ))}
+    </div>
+  )
 }
 
 interface MediaViewerProps {
@@ -33,9 +78,15 @@ interface MediaViewerProps {
 export function MediaViewer({ id, prev, next, onNavigate, onClose }: MediaViewerProps) {
   const { data: item, error } = useQuery(trpc.media.byId.queryOptions({ id }, { placeholderData: keepPreviousData }))
   const [showInfo, setShowInfo] = useState(false)
+  const [hovering, setHovering] = useState(false)
+  const [videoPaused, setVideoPaused] = useState(false)
+  const idle = useIdle(IDLE_MS)
+  const hidden = controlsHidden({ idle, hovering, infoOpen: showInfo, videoPaused })
   const showInFolder = useMutation(
     trpc.media.showInFolder.mutationOptions({ onError: (error) => toast.error(error.message) }),
   )
+  const thumbhash = item?.thumbhash
+  const tint = useMemo(() => (thumbhash ? (ambientGlassStyle(thumbhash) as CSSProperties) : undefined), [thumbhash])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -56,90 +107,140 @@ export function MediaViewer({ id, prev, next, onNavigate, onClose }: MediaViewer
     preload(prev)
   }, [prev, next])
 
-  const navButton = 'absolute top-1/2 -translate-y-1/2 rounded-full bg-black/40 text-white hover:bg-black/70'
+  // A new video starts playing; only a pause by the user keeps the controls.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: resets whenever the shown item changes.
+  useEffect(() => setVideoPaused(false), [id])
+
+  const control = cn('transition-opacity duration-(--duration-base)', hidden && 'pointer-events-none opacity-0')
+  const hover = { onPointerEnter: () => setHovering(true), onPointerLeave: () => setHovering(false) }
+  const navButton = cn(control, 'glass-bar absolute top-1/2 -translate-y-1/2 rounded-full')
+  const date = item ? (item.takenAt ?? item.mtime) : undefined
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-label={item?.fileName ?? 'Media viewer'}
-      className="fixed inset-0 z-50 flex flex-col bg-black/95 text-white"
+      data-viewer
+      className={cn('fixed inset-0 z-50 overflow-hidden bg-background text-foreground', hidden && 'cursor-none')}
+      style={tint}
     >
-      <div className="flex h-12 shrink-0 items-center gap-1 px-3 text-sm">
-        <span className="mr-auto truncate text-white/80">{item?.fileName}</span>
+      <ViewerBackdrop item={item} />
+      {/* The viewer covers the title bar; this strip still moves the window. */}
+      <div className="drag-region absolute inset-x-0 top-0 z-10 h-12" />
+      <MediaContextMenu id={id} onInformation={() => setShowInfo(true)}>
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: mouse-only convenience; Escape already closes. */}
+        {/* biome-ignore lint/a11y/useKeyWithClickEvents: see above. */}
+        <div
+          // The open info panel takes its width from the media area, so it never covers the photo.
+          className={cn(
+            'absolute inset-0 flex items-center justify-center px-16 pt-12 pb-20',
+            showInfo && 'pr-[calc(20rem+2.25rem)]',
+          )}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) onClose()
+          }}
+        >
+          {error && <p className="text-muted-foreground">{error.message}</p>}
+          {item?.kind === 'video' && (
+            // biome-ignore lint/a11y/useMediaCaption: personal videos come without caption tracks.
+            <video
+              key={item.id}
+              src={mediaUrl(item.id)}
+              controls
+              autoPlay
+              data-viewer-media
+              className="max-h-full max-w-full"
+              onPlay={() => setVideoPaused(false)}
+              onPause={() => setVideoPaused(true)}
+            />
+          )}
+          {item?.kind === 'image' && (
+            <ZoomableImage key={item.id} src={mediaUrl(item.id)} alt={item.fileName} onBackdropClick={onClose} />
+          )}
+        </div>
+      </MediaContextMenu>
+
+      {prev && (
         <Button
           variant="ghost"
-          size="icon"
-          onClick={() => showInFolder.mutate({ id })}
-          aria-label="Show in Explorer"
-          title="Show in Explorer"
+          size="icon-lg"
+          className={cn(navButton, 'left-3')}
+          onClick={() => onNavigate(prev.id)}
+          aria-label="Previous"
+          title="Previous (←)"
+          {...hover}
         >
-          <FolderOpenIcon />
+          <ChevronLeftIcon />
         </Button>
+      )}
+      {next && (
         <Button
           variant="ghost"
-          size="icon"
-          onClick={() => setShowInfo((show) => !show)}
-          aria-label="Info"
-          aria-pressed={showInfo}
-          title="Info (i)"
-          className={cn(showInfo && 'bg-white/15')}
+          size="icon-lg"
+          className={cn(navButton, showInfo ? 'right-[calc(20rem+1.5rem)]' : 'right-3')}
+          onClick={() => onNavigate(next.id)}
+          aria-label="Next"
+          title="Next (→)"
+          {...hover}
         >
-          <InfoIcon />
+          <ChevronRightIcon />
         </Button>
-        <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close" title="Close (Esc)" autoFocus>
-          <XIcon />
-        </Button>
-      </div>
-      <div className="flex min-h-0 flex-1">
-        <MediaContextMenu id={id} onInformation={() => setShowInfo(true)}>
-          {/* biome-ignore lint/a11y/noStaticElementInteractions: mouse-only convenience; Escape already closes. */}
-          {/* biome-ignore lint/a11y/useKeyWithClickEvents: see above. */}
-          <div
-            className="relative flex min-w-0 flex-1 items-center justify-center p-4 pt-0"
-            onClick={(event) => {
-              if (event.target === event.currentTarget) onClose()
-            }}
-          >
-            {error && <p className="text-white/60">{error.message}</p>}
-            {item?.kind === 'video' && (
-              // biome-ignore lint/a11y/useMediaCaption: personal videos come without caption tracks.
-              <video key={item.id} src={mediaUrl(item.id)} controls autoPlay className="max-h-full max-w-full" />
-            )}
-            {item?.kind === 'image' && (
-              <ZoomableImage key={item.id} src={mediaUrl(item.id)} alt={item.fileName} onBackdropClick={onClose} />
-            )}
-            {prev && (
-              <Button
-                variant="ghost"
-                size="icon-lg"
-                className={cn(navButton, 'left-3')}
-                onClick={() => onNavigate(prev.id)}
-                aria-label="Previous"
-                title="Previous (←)"
-              >
-                <ChevronLeftIcon />
-              </Button>
-            )}
-            {next && (
-              <Button
-                variant="ghost"
-                size="icon-lg"
-                className={cn(navButton, 'right-3')}
-                onClick={() => onNavigate(next.id)}
-                aria-label="Next"
-                title="Next (→)"
-              >
-                <ChevronRightIcon />
-              </Button>
-            )}
-          </div>
-        </MediaContextMenu>
-        {showInfo && item && (
-          <aside className="flex w-80 shrink-0 flex-col overflow-y-auto border-white/10 border-l p-4 text-sm">
-            <MediaInfo item={item} />
-          </aside>
+      )}
+
+      <div
+        role="toolbar"
+        aria-label="Viewer controls"
+        className={cn(
+          control,
+          'glass-bar absolute bottom-4 left-1/2 flex h-12 max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-3 rounded-full pr-1.5 pl-5',
         )}
+        {...hover}
+      >
+        <span className="min-w-0 truncate font-semibold">{item?.fileName}</span>
+        {date !== undefined && <span className="shrink-0 tabular-nums">{formatDateTime(date)}</span>}
+        {item?.rating ? <Rating value={item.rating} /> : null}
+        <Separator orientation="vertical" className="h-5!" />
+        <div className="flex shrink-0 items-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full"
+            onClick={() => showInFolder.mutate({ id })}
+            aria-label="Show in Explorer"
+            title="Show in Explorer"
+          >
+            <FolderOpenIcon />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn('rounded-full', showInfo && 'bg-accent')}
+            onClick={() => setShowInfo((show) => !show)}
+            aria-label="Info"
+            aria-pressed={showInfo}
+            title="Info (i)"
+          >
+            <InfoIcon />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full"
+            onClick={onClose}
+            aria-label="Close"
+            title="Close (Esc)"
+            autoFocus
+          >
+            <XIcon />
+          </Button>
+        </div>
       </div>
+
+      {showInfo && item && (
+        <aside className="glass-panel absolute top-14 right-3 bottom-20 flex w-80 flex-col overflow-y-auto rounded-xl p-4 text-sm">
+          <MediaInfo item={item} />
+        </aside>
+      )}
     </div>
   )
 }

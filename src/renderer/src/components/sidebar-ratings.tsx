@@ -12,6 +12,8 @@ import {
 import type { GallerySearch } from '@/lib/search'
 import { trpc } from '@/lib/trpc'
 
+const STARS = [1, 2, 3, 4, 5]
+
 function ratingLabel(rating: number): string {
   if (rating === 0) return 'Unrated'
   return rating === 1 ? '1 star' : `${rating} stars`
@@ -46,8 +48,18 @@ export function SidebarRatings() {
                   search={(prev) => ({ ...prev, ...toggleRating(prev, rating) })}
                   title={active ? `Remove ${label} from the filter` : `Show ${label}`}
                 >
-                  {rating === 0 ? <StarOffIcon /> : <StarIcon />}
-                  <span>{label}</span>
+                  {rating === 0 ? (
+                    <>
+                      <StarOffIcon />
+                      <span>{label}</span>
+                    </>
+                  ) : (
+                    <span className="flex gap-0.5 text-star" role="img" aria-label={label}>
+                      {STARS.slice(0, rating).map((star) => (
+                        <StarIcon key={star} className="size-3.5! fill-current" />
+                      ))}
+                    </span>
+                  )}
                 </Link>
               </SidebarMenuButton>
               <SidebarMenuBadge>{count.toLocaleString()}</SidebarMenuBadge>

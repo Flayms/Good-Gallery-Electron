@@ -105,3 +105,17 @@ export function tagMode(search: GallerySearch, name: string): TagMode | undefine
   if (has(search.exclude)) return 'exclude'
   return undefined
 }
+
+/** Search patch that removes the filters grouped under _Filters_: media kind, date range and rating. */
+export const CLEARED_FILTERS = {
+  kind: undefined,
+  from: undefined,
+  to: undefined,
+  rating: undefined,
+} satisfies Partial<GallerySearch>
+
+/** How many of the filters under _Filters_ are set (a date range counts once). */
+export function activeFilterCount(search: GallerySearch): number {
+  const dateRange = search.from !== undefined || search.to !== undefined
+  return [search.kind !== undefined, dateRange, (search.rating?.length ?? 0) > 0].filter(Boolean).length
+}

@@ -49,23 +49,23 @@ The user finds media items by the tags already embedded in their files, combined
 
 ### REQ-007-07 · Media kind
 
-- **Given** the toolbar
+- **Given** _Filters_ in the toolbar (013)
 - **When** the user picks _All_, _Photos_ or _Videos_
 - **Then** the gallery shows all media items, only images, or only videos
 
 ### REQ-007-08 · Date range
 
-- **Given** the _Date_ filter
+- **Given** the _Date_ section under _Filters_
 - **When** the user sets a start day, an end day or both
 - **Then** only media items whose date taken (else date modified) falls on or between those local calendar days are shown
-- **And** the button shows the range (e.g. "From 1 Jan 2024", "Until …", one day or a span), the date pickers don't offer an end before the start, and _Clear_ removes the range
+- **And** the section shows the range (e.g. "From 1 Jan 2024", "Until …", one day or a span), the date pickers don't offer an end before the start, and _Clear_ removes the range
 
 ### REQ-007-09 · Rating
 
-- **Given** the _Rating_ filter
+- **Given** the _Rating_ section under _Filters_
 - **When** the user selects any combination of _Unrated_ and 1–5 stars
 - **Then** only media items with exactly one of the selected ratings are shown
-- **And** the button shows "Any rating", "Unrated" or the selected stars (e.g. "3★, 5★"), and _Clear_ removes the filter
+- **And** the section shows "Any rating", "Unrated" or the selected stars (e.g. "3★, 5★"), and _Clear_ removes the filter
 
 ### REQ-007-10 · Library and folder
 
@@ -121,7 +121,7 @@ The user finds media items by the tags already embedded in their files, combined
 | REQ-007-04 | `src/main/trpc/router.test.ts` › tags.autocomplete › matches normalized prefixes ordered by usage; counts descendants and follows deletions; `e2e/smoke.spec.ts` | partial: hiding tags already in the search is untested                                     |
 | REQ-007-05 | `src/renderer/src/lib/search.test.ts` › tag search state › adds, moves and removes tags case-insensitively; `e2e/smoke.spec.ts` (chip removal)               | partial: `-` prefix, chip toggling and keyboard handling are untested                        |
 | REQ-007-06 | `src/main/trpc/router.test.ts` › media.layout name › matches a case-insensitive substring of the file name, combined with other filters; `src/renderer/src/lib/search.test.ts` › passes the file name filter through; `e2e/smoke.spec.ts` | pass |
-| REQ-007-07 | `src/main/trpc/router.test.ts` › media.layout › falls back to mtime and filters by kind and root                                                              | partial: the toolbar toggle is untested                                                      |
+| REQ-007-07 | `src/main/trpc/router.test.ts` › media.layout › falls back to mtime and filters by kind and root; `e2e/smoke.spec.ts` (_Videos_ under _Filters_) | pass |
 | REQ-007-08 | `src/main/trpc/router.test.ts` › media.layout › filters by date range; `src/renderer/src/lib/search.test.ts` › turns inclusive local days into a half-open range | partial: the button label is untested                                                       |
 | REQ-007-09 | `src/main/trpc/router.test.ts` › media.layout ratings › filters by exact rating, 0 meaning unrated; `e2e/smoke.spec.ts`                                      | pass                                                                                         |
 | REQ-007-10 | `src/main/trpc/router.test.ts` › media.layout › filters by folder including subfolders; falls back to mtime and filters by kind and root; `src/renderer/src/lib/search.test.ts` › drops the folder without a root | pass |

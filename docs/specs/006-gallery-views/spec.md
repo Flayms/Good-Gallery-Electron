@@ -11,7 +11,7 @@ The user scrolls through hundreds of thousands of media items as smoothly as thr
 ### REQ-006-01 · Choose a gallery view
 
 - **Given** the gallery
-- **When** the user picks Masonry, Justified, Grid or List in the toolbar
+- **When** the user picks Masonry, Justified, Grid or List under _View_ in the toolbar (013)
 - **Then** the gallery shows the same media items in the same order in that view
 - **And** the choice is remembered across sessions (default: Masonry), and clicking the active view keeps it
 
@@ -45,7 +45,7 @@ The user scrolls through hundreds of thousands of media items as smoothly as thr
 ### REQ-006-06 · Zoom
 
 - **Given** the Masonry, Justified or Grid view
-- **When** the user moves the zoom slider, clicks _Zoom in_ / _Zoom out_, or turns the mouse wheel while holding Ctrl over the gallery
+- **When** the user moves the zoom slider or clicks _Zoom in_ / _Zoom out_ under _View_, or turns the mouse wheel while holding Ctrl over the gallery
 - **Then** the tiles grow or shrink in steps between 12 and 2 columns (default 5), one step per wheel notch, with small touchpad movements adding up to steps and a change of direction starting over
 - **And** the zoom level is remembered across sessions, and the zoom controls are disabled in the List view
 

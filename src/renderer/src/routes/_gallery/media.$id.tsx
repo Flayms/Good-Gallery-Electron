@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo } from 'react'
 import { z } from 'zod'
 import { MediaViewer } from '@/components/media-viewer'
 import { useGalleryMedia } from '@/hooks/use-gallery-media'
+import { markTransitionSource } from '@/lib/view-transition'
 
 const mediaId = z.coerce.number().int().positive()
 
@@ -31,7 +32,11 @@ function MediaRoute() {
   const prev = useMemo(() => (prevId === undefined ? undefined : { id: prevId, kind: prevKind }), [prevId, prevKind])
   const next = useMemo(() => (nextId === undefined ? undefined : { id: nextId, kind: nextKind }), [nextId, nextKind])
 
-  const close = useCallback(() => void navigate({ to: '/', search: (prev) => prev }), [navigate])
+  // The item shrinks back into its tile (REQ-013-12).
+  const close = useCallback(() => {
+    markTransitionSource(id)
+    void navigate({ to: '/', search: (prev) => prev, viewTransition: true })
+  }, [navigate, id])
   // Replacing keeps Back from stepping through every viewed item.
   const show = useCallback(
     (target: number) =>

@@ -27,8 +27,11 @@ function IndexerProgress({ status, libraries }: { status: IndexerStatus; librari
   if (!current) return null
   const label = libraries.find((root) => root.id === current.rootId)?.label ?? 'library'
   return (
-    <div className="flex flex-col gap-0.5 px-2 py-1 text-muted-foreground text-xs" aria-live="polite">
-      <div className="flex items-center gap-1.5 text-foreground">
+    <div
+      className="flex flex-col gap-0.5 rounded-md bg-muted px-2.5 py-2 text-muted-foreground text-xs"
+      aria-live="polite"
+    >
+      <div className="flex items-center gap-1.5 text-foreground text-sm">
         <Loader2Icon className="size-3.5 animate-spin" />
         <span className="truncate">
           {current.mode === 'full' ? 'Indexing' : 'Checking'} {label}
@@ -49,8 +52,9 @@ export function AppSidebar({ indexer }: { indexer: IndexerStatus | undefined }) 
 
   return (
     <Sidebar>
-      <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-1.5 font-heading font-semibold">
+      {/* Part of the title bar: moves the window, and leaves room for macOS's window controls. */}
+      <SidebarHeader className="drag-region titlebar-pad-left h-12 justify-center py-0">
+        <div className="flex items-center gap-2 font-semibold">
           <ImagesIcon className="size-5" />
           Good Gallery
         </div>

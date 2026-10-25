@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { cn } from 'cn'
-import { ChevronRightIcon, MinusIcon, TagIcon } from 'lucide-react'
+import { ChevronRightIcon, MinusIcon } from 'lucide-react'
 import { useState } from 'react'
 import {
   SidebarMenuBadge,
@@ -25,14 +25,15 @@ function tagSearchPatch(node: TagNode, search: GallerySearch) {
 }
 
 function NodeIcon({ mode }: { mode: 'include' | 'exclude' | undefined }) {
-  return mode === 'exclude' ? <MinusIcon className="text-destructive" /> : <TagIcon />
+  // Only exclusions get an icon; a tag icon on every row would just repeat itself.
+  return mode === 'exclude' ? <MinusIcon className="text-destructive" /> : null
 }
 
 function Chevron({ open, name, onToggle }: { open: boolean; name: string; onToggle: () => void }) {
   return (
     <button
       type="button"
-      className="flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-sidebar-accent"
+      className="flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted"
       onClick={onToggle}
       aria-label={open ? `Collapse ${name}` : `Expand ${name}`}
       aria-expanded={open}

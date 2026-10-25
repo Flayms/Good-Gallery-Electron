@@ -6,6 +6,7 @@ import { FileIcon, FileSearchIcon, MinusIcon, PlusIcon, SearchIcon, TagIcon, XIc
 import { type KeyboardEvent, useId, useRef, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { CommandEmpty, CommandItem, CommandList, CommandShortcut } from '@/components/ui/command'
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 import { type GallerySearch, type TagMode, withoutTag, withTag } from '@/lib/search'
 import { trpc } from '@/lib/trpc'
 
@@ -16,6 +17,7 @@ const FILE_NAME_VALUE = 'file-name'
 interface TagSearchProps {
   search: GallerySearch
   onSearchChange: (patch: Partial<GallerySearch>) => void
+  className?: string
 }
 
 function RemoveButton({ label, onRemove }: { label: string; onRemove: () => void }) {
@@ -68,7 +70,7 @@ function TagChip({
  * Tag and file name filter: chips for the selected tags (and file name text) and an autocomplete input;
  * a leading `-` adds a tag exclusion.
  */
-export function TagSearch({ search, onSearchChange }: TagSearchProps) {
+export function TagSearch({ search, onSearchChange, className }: TagSearchProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const inputId = useId()
   const [query, setQuery] = useState('')
@@ -126,43 +128,54 @@ export function TagSearch({ search, onSearchChange }: TagSearchProps) {
       loop
       value={highlightedValue}
       onValueChange={setHighlighted}
-      className="relative min-w-48 max-w-xl flex-1"
+      className={cn('min-w-32 max-w-xl flex-1', className)}
       onKeyDown={onKeyDown}
     >
-      {/* A label, so clicks on the padding focus the input; `htmlFor`, since the chip buttons are labelable too. */}
-      <label
-        htmlFor={inputId}
-        className="flex min-h-8 cursor-text flex-wrap items-center gap-1 rounded-lg border border-input bg-input/30 px-2 py-1 focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50"
-      >
-        <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
-        {selected.map((tag) => (
-          <TagChip
-            key={`${tag.mode}:${tag.name}`}
-            name={tag.name}
-            mode={tag.mode}
-            onToggle={() => onSearchChange(withTag(search, tag.name, tag.mode === 'include' ? 'exclude' : 'include'))}
-            onRemove={() => onSearchChange(withoutTag(search, tag.name))}
-          />
-        ))}
-        {search.name && <FileNameChip name={search.name} onRemove={() => onSearchChange({ name: undefined })} />}
-        <CommandPrimitive.Input
-          id={inputId}
-          ref={inputRef}
-          value={query}
-          onValueChange={setQuery}
-          onFocus={() => setOpen(true)}
-          onBlur={() => setOpen(false)}
-          placeholder={
-            selected.length === 0 && !search.name ? 'Search tags or file names… (-tag to exclude)' : undefined
-          }
-          aria-label="Search tags or file names"
-          className="h-6 min-w-24 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-        />
-      </label>
-      {open && (
-        <div className="absolute inset-x-0 top-full z-50 mt-1 rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10">
-          {/* Keeps focus in the input while clicking a suggestion. */}
-          <CommandList onMouseDown={(event) => event.preventDefault()}>
+      {/* The suggestions open in a portal: inside the glass toolbar they could only blur the toolbar itself. */}
+      <Popover open={open}>
+        <PopoverAnchor asChild>
+          {/* A label, so clicks on the padding focus the input; `htmlFor`, since the chip buttons are labelable too. */}
+          <label
+            htmlFor={inputId}
+            className="flex h-8 cursor-text items-center gap-1 overflow-x-auto rounded-md border border-transparent bg-field px-2 [scrollbar-width:none] focus-within:border-ring"
+          >
+            <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
+            {selected.map((tag) => (
+              <TagChip
+                key={`${tag.mode}:${tag.name}`}
+                name={tag.name}
+                mode={tag.mode}
+                onToggle={() =>
+                  onSearchChange(withTag(search, tag.name, tag.mode === 'include' ? 'exclude' : 'include'))
+                }
+                onRemove={() => onSearchChange(withoutTag(search, tag.name))}
+              />
+            ))}
+            {search.name && <FileNameChip name={search.name} onRemove={() => onSearchChange({ name: undefined })} />}
+            <CommandPrimitive.Input
+              id={inputId}
+              ref={inputRef}
+              value={query}
+              onValueChange={setQuery}
+              onFocus={() => setOpen(true)}
+              onBlur={() => setOpen(false)}
+              placeholder={selected.length === 0 && !search.name ? 'Search tags or file names' : undefined}
+              aria-label="Search tags or file names"
+              className="h-6 min-w-24 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            />
+          </label>
+        </PopoverAnchor>
+        <PopoverContent
+          align="start"
+          className="w-(--radix-popover-trigger-width) min-w-64 gap-1 p-1"
+          // Focus stays in the input; it decides when the suggestions close.
+          onOpenAutoFocus={(event) => event.preventDefault()}
+          onCloseAutoFocus={(event) => event.preventDefault()}
+          onEscapeKeyDown={(event) => event.preventDefault()}
+          // Keeps focus in the input while clicking a suggestion.
+          onMouseDown={(event) => event.preventDefault()}
+        >
+          <CommandList>
             {!suggestions.isPending && <CommandEmpty>No matching tags</CommandEmpty>}
             {options.map((tag) => (
               <CommandItem key={tag.id} value={String(tag.id)} onSelect={() => add(tag.name)}>
@@ -178,8 +191,9 @@ export function TagSearch({ search, onSearchChange }: TagSearchProps) {
               </CommandItem>
             )}
           </CommandList>
-        </div>
-      )}
+          <p className="px-2 pt-1 pb-1.5 text-muted-foreground text-xs">Start with - to exclude a tag</p>
+        </PopoverContent>
+      </Popover>
     </CommandPrimitive>
   )
 }

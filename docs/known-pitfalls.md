@@ -29,3 +29,13 @@
   * Tag suggestions load asynchronously, but the "File name contains" option shows up right away: clicking the first option before the tags arrive picks the file name filter.
   * `evaluate` callbacks need DOM types: they come from `tsconfig.e2e.json`. Don't add `/// <reference lib="dom" />` to node-project files - it leaks into main and breaks `Buffer`/stream `BodyInit` types.
 * **electron-builder** sometimes fails with `EPERM ... rename` while extracting NSIS into its cache; rerunning `pnpm exec electron-builder --win` works.
+* **Window Controls Overlay** (spec 013, verified on Windows 11 with Electron 44): `titleBarStyle: 'hidden'` + `titleBarOverlay: { color: '#00000000', … }` gives a transparent overlay; the app content shows through behind the native buttons. `env(titlebar-area-x / -width / -height)` and `navigator.windowControlsOverlay` report the free area (the buttons take 137 px at a height of 48). macOS and Linux are not verified yet.
+  * `app-region: drag` and `-webkit-app-region: drag` both work. Interactive children need `no-drag`, or they stop receiving clicks.
+  * Check drag regions without moving the mouse: send `WM_NCHITTEST` (0x84) to the window handle (`win.getNativeWindowHandle()`) with screen coordinates; `2` = caption (draggable), `1` = client.
+  * `page.screenshot()` / `capturePage()` don't include the native buttons; capture the screen instead.
+* **`backdrop-filter` creates a backdrop root:** a translucent element inside another element with `backdrop-filter` (the glass toolbar) only blurs that ancestor's content, not the gallery behind it. Render overlays in a portal.
+* **`color-mix()` with `transparent`** lowers the alpha of the result. Don't mix an optional tint into translucent glass that way; compute the tinted color (`lib/ambient.ts`).
+* **A closing Radix popover still takes Escape:** while a menu animates out (≈ 100 ms), its dismiss layer handles the next Escape and calls `preventDefault()`, so the viewer ignores it. e2e: close menus with `closeMenu()`, which waits until the menu is gone.
+* **tw-animate-css ignores reduced motion:** its zoom and slide values are reset in the `motion` layer of `styles.css`. Component classes set them, so the reset must sit in a layer after `utilities`.
+* **View transition names must be unique:** the tile and the viewer's media only share `media-hero` one at a time (`:has([data-viewer])` in `styles.css`); with a duplicate name the browser skips the transition.
+* **Scroll performance at high zoom** (open issue, measured 2026-10-25 for spec 013): fast scrolling (1440 px/s) at 12 columns over 3 000 photos drops frames with or without glass (p95 frame time ≈ 110 ms, vs ≈ 17–28 ms at 5 columns). Glass toolbars and panels added no measurable cost.

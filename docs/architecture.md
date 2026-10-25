@@ -32,7 +32,7 @@ flowchart LR
 | UI        | Tailwind CSS            | Styling, replaces CSS                               |
 | UI        | shadcn/ui               | Components with good styling defaults               |
 | UI        | Radix UI, cmdk, sonner  | Primitives behind shadcn (menus, command, toasts)   |
-| UI        | lucide-react, Geist     | Icons, font                                         |
+| UI        | lucide-react, Atkinson Hyperlegible Next | Icons, bundled font (Fontsource)       |
 | UI        | TanStack Router         | Type-safe, file-based routing                       |
 | Tooling   | Vite                    | Build tool                                          |
 | Tooling   | TypeScript 7            | Language                                            |

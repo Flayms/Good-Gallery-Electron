@@ -6,7 +6,7 @@ import { MediaContextMenu } from '@/components/media-context-menu'
 import { Rating } from '@/components/media-info'
 import { type MediaItem, MediaThumbnail } from '@/components/media-tile'
 import { useVirtualAnchor } from '@/hooks/use-virtual-anchor'
-import { formatBytes, formatDuration } from '@/lib/format'
+import { formatBytes, formatDateTime, formatDuration } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 const ROW_HEIGHT = 52
@@ -24,6 +24,8 @@ interface MediaListProps {
   onRangeChange?: (start: number, end: number) => void
   /** Scrolls this item into view whenever it changes (no-op if it's visible or negative). */
   scrollToIndex?: number
+  /** Height of the toolbar floating over the top: content starts below it and scrolls underneath. */
+  insetTop?: number
   className?: string
 }
 
@@ -41,10 +43,7 @@ function MediaListRow({ item }: { item: MediaItem }) {
         search={(prev) => prev}
         title={item.fileName}
         draggable={false}
-        className={cn(
-          COLUMNS,
-          'h-full rounded-md text-sm outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring',
-        )}
+        className={cn(COLUMNS, 'h-full rounded-md text-sm hover:bg-muted')}
       >
         <div style={{ width: THUMB_SIZE, height: THUMB_SIZE }}>
           <MediaThumbnail item={item} width={THUMB_SIZE} badge={false} />
@@ -65,7 +64,7 @@ function MediaListRow({ item }: { item: MediaItem }) {
           className={cn('truncate tabular-nums', item.takenAt === null && 'text-muted-foreground')}
           title={item.takenAt === null ? 'Date modified (no capture date)' : undefined}
         >
-          {new Date(date).toLocaleString()}
+          {formatDateTime(date)}
         </span>
         <span className="text-right tabular-nums">{formatBytes(item.size)}</span>
         <span className="text-muted-foreground tabular-nums">
@@ -78,15 +77,24 @@ function MediaListRow({ item }: { item: MediaItem }) {
 }
 
 /** Details list: one row per item with its thumbnail and file data. */
-export function MediaList({ count, getKey, getItem, onRangeChange, scrollToIndex, className }: MediaListProps) {
+export function MediaList({
+  count,
+  getKey,
+  getItem,
+  onRangeChange,
+  scrollToIndex,
+  insetTop = 0,
+  className,
+}: MediaListProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const virtualizer = useVirtualizer({
     count,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => ROW_HEIGHT,
     getItemKey: getKey,
-    // The sticky header sits above the rows inside the scroll element.
-    scrollMargin: HEADER_HEIGHT,
+    // The inset and the sticky header sit above the rows inside the scroll element.
+    scrollMargin: insetTop + HEADER_HEIGHT,
+    scrollPaddingStart: insetTop + HEADER_HEIGHT,
     overscan: 10,
   })
 
@@ -101,10 +109,11 @@ export function MediaList({ count, getKey, getItem, onRangeChange, scrollToIndex
 
   return (
     <div ref={scrollRef} className={cn('h-full overflow-y-auto', className)}>
+      <div style={{ height: insetTop }} />
       <div
         role="presentation"
-        className={cn(COLUMNS, 'sticky top-0 z-10 border-b bg-background font-medium text-muted-foreground text-xs')}
-        style={{ height: HEADER_HEIGHT }}
+        className={cn(COLUMNS, 'glass-bar sticky z-10 font-semibold text-muted-foreground text-xs')}
+        style={{ height: HEADER_HEIGHT, top: insetTop }}
       >
         <span />
         <span>Name</span>
@@ -123,7 +132,7 @@ export function MediaList({ count, getKey, getItem, onRangeChange, scrollToIndex
               className="absolute top-0 left-0 w-full"
               style={{
                 height: virtualItem.size,
-                transform: `translateY(${virtualItem.start - HEADER_HEIGHT}px)`,
+                transform: `translateY(${virtualItem.start - insetTop - HEADER_HEIGHT}px)`,
               }}
             >
               {item ? <MediaListRow item={item} /> : <div className="mx-3 my-1.5 h-10 rounded-md bg-muted" />}

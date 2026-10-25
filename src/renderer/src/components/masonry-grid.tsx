@@ -17,6 +17,8 @@ interface MasonryGridProps {
   onRangeChange?: (start: number, end: number) => void
   /** Scrolls this item into view whenever it changes (no-op if it's visible or negative). */
   scrollToIndex?: number
+  /** Height of the toolbar floating over the top: content starts below it and scrolls underneath. */
+  insetTop?: number
   renderItem: (index: number, size: { width: number; height: number }) => ReactNode
   className?: string
 }
@@ -30,6 +32,7 @@ export function MasonryGrid({
   gap = 8,
   onRangeChange,
   scrollToIndex,
+  insetTop = 0,
   renderItem,
   className,
 }: MasonryGridProps) {
@@ -44,6 +47,8 @@ export function MasonryGrid({
     lanes: columns,
     gap,
     overscan: 8,
+    paddingStart: insetTop,
+    scrollPaddingStart: insetTop,
     enabled: colWidth > 0,
   })
 

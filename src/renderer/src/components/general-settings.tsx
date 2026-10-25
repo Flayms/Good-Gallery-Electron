@@ -32,7 +32,7 @@ function SettingRow({ label, description, children }: { label: string; descripti
     <div className="flex items-center gap-6 p-3">
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="font-medium text-sm">{label}</span>
-        <span className="text-muted-foreground text-xs">{description}</span>
+        <span className="max-w-[70ch] text-muted-foreground text-sm leading-[1.55]">{description}</span>
       </div>
       <div className="flex shrink-0 items-center gap-3">{children}</div>
     </div>
@@ -102,7 +102,7 @@ export function GeneralSettings() {
   return (
     <>
       <section className="flex flex-col gap-4">
-        <h2 className="font-heading font-medium text-lg">Indexing</h2>
+        <h2 className="font-semibold text-lg">Indexing</h2>
         <div className="flex flex-col divide-y rounded-lg border">
           <SettingRow
             label="Check for missed changes"
@@ -134,7 +134,7 @@ export function GeneralSettings() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="font-heading font-medium text-lg">Thumbnail cache</h2>
+        <h2 className="font-semibold text-lg">Thumbnail cache</h2>
         <div className="flex flex-col divide-y rounded-lg border">
           <SettingRow label="Maximum size" description="Least recently viewed thumbnails are removed first.">
             <Select value={String(thumbCacheGiB)} onValueChange={(value) => set({ thumbCacheGiB: Number(value) })}>

@@ -22,6 +22,8 @@ interface JustifiedRowsProps {
   onRangeChange?: (start: number, end: number) => void
   /** Scrolls this item into view whenever it changes (no-op if it's visible or negative). */
   scrollToIndex?: number
+  /** Height of the toolbar floating over the top: content starts below it and scrolls underneath. */
+  insetTop?: number
   renderItem: (index: number, size: { width: number; height: number }) => ReactNode
   className?: string
 }
@@ -35,6 +37,7 @@ export function JustifiedRows({
   gap = 8,
   onRangeChange,
   scrollToIndex,
+  insetTop = 0,
   renderItem,
   className,
 }: JustifiedRowsProps) {
@@ -53,6 +56,8 @@ export function JustifiedRows({
     getItemKey: (index) => getKey(rows[index]?.start ?? -1),
     gap,
     overscan: 4,
+    paddingStart: insetTop,
+    scrollPaddingStart: insetTop,
     enabled: width > 0,
   })
 

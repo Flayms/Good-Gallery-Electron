@@ -1,6 +1,6 @@
 # AGENTS.md
 
-A Windows desktop gallery for large photo and video libraries (50k–500k files). Media appear in a virtualized masonry, justified, grid or list view. Libraries on network shares are supported, and thumbnails are cached locally. Search uses the tags that are already embedded in your files.
+A desktop gallery for large photo and video libraries (50k–500k files). Media appear in a virtualized masonry, justified, grid or list view. Libraries on network shares are supported, and thumbnails are cached locally. Search uses the tags that are already embedded in your files.
 
 ## Orientation
 
@@ -8,6 +8,7 @@ A Windows desktop gallery for large photo and video libraries (50k–500k files)
 | ------------------------ | ----------------------------------------------------------------------------------------------------------------- |
 | `README.md`              | User facing description. Keep up to date with screenshots.                                                        |
 | `docs/architecture.md`   | Architecture overview                                                                                             |
+| `docs/design.md`         | Visual design: principles, tokens, surfaces, type, motion, writing. Read before any UI work                       |
 | `docs/glossary.md`       | Definitions of domain terms                                                                                       |
 | `docs/known-pitfalls.md` | if you encounter problems or pitfalls add them here, either to avoid them in the future or for us to fix later on |
 | `docs/specs/README.md`   | Index of feature specs with their status, conventions and template                                                |

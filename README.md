@@ -6,12 +6,13 @@ A Windows desktop gallery for large photo and video libraries (50k–500k files)
 
 ## Features
 
-- **Views:** Masonry (columns), Justified (rows of equal height), Grid (square tiles) and List (details). All are virtualized, so they stay fast at any library size. Zoom the tile views with the slider, the +/- buttons or Ctrl + mouse wheel.
+- **Views:** Masonry (columns), Justified (rows of equal height), Grid (square tiles) and List (details). All are virtualized, so they stay fast at any library size. Switch views, zoom and sort under _View_, or zoom with Ctrl + mouse wheel.
 - **Network shares:** libraries can live on `\\server\share`. Thumbnails (WebP and ThumbHash placeholders) are cached locally, and the cached index stays browsable while a share is offline.
 - **Change detection:** a file watcher picks up changes, plus periodic quick scans. Manual rescans are also possible.
-- **Search:** combine tags (include or exclude, hierarchical), filename text, folder, date range, rating and media type. Sort by date taken, date modified, name, path or size.
+- **Search:** combine tags (include or exclude, hierarchical), filename text and folder; media type, date range and rating are under _Filters_. Sort by date taken, date modified, name, path or size.
 - **Sidebar:** libraries with a folder tree, People and Places (from keyword hierarchies and face regions), ratings and popular tags.
-- **Viewer:** keyboard navigation, zoom and pan, video playback, a metadata panel and "Show in Explorer".
+- **Viewer:** the photo fills the window over a blurred version of itself, with controls that step aside while you look. Keyboard navigation, zoom and pan, video playback, a metadata panel and "Show in Explorer".
+- **Look:** dark, neutral chrome so only your photos bring color; the toolbar and menus are frosted glass over the gallery.
 - **Read-only:** tags and ratings come from EXIF / IPTC / XMP and `.xmp` sidecars. Files are never modified.
 
 | Justified                                                   | Grid                                            |

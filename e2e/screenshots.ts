@@ -251,13 +251,20 @@ try {
   await thumbnailsLoaded(page)
   await capture(page, 'masonry')
 
-  const views = page.getByRole('radiogroup', { name: 'View' })
+  const pickView = async (view: string) => {
+    await page.getByRole('button', { name: 'View options' }).click()
+    await page.getByRole('radiogroup', { name: 'View' }).getByRole('radio', { name: view, exact: true }).click()
+    await page.keyboard.press('Escape')
+    // Once the menu is gone, keyboard focus is back on its trigger; that focus ring doesn't belong in the screenshots.
+    await expect(page.locator('[data-slot=popover-content]')).toHaveCount(0)
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+  }
   for (const view of ['Justified', 'Grid', 'List']) {
-    await views.getByRole('radio', { name: view, exact: true }).click()
+    await pickView(view)
     await thumbnailsLoaded(page)
     await capture(page, view.toLowerCase())
   }
-  await views.getByRole('radio', { name: 'Masonry', exact: true }).click()
+  await pickView('Masonry')
 
   const search = page.getByRole('combobox', { name: 'Search tags or file names' })
   await search.fill('Sunset')

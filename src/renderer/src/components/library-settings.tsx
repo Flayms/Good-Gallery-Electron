@@ -59,8 +59,10 @@ export function LibrarySettings() {
   return (
     <section className="flex flex-col gap-4">
       <div>
-        <h2 className="font-heading font-medium text-lg">Libraries</h2>
-        <p className="text-muted-foreground text-sm">Folders on local disks or network shares, indexed recursively.</p>
+        <h2 className="font-semibold text-lg">Libraries</h2>
+        <p className="max-w-[70ch] text-muted-foreground text-sm leading-[1.55]">
+          Folders on local disks or network shares, indexed recursively.
+        </p>
       </div>
 
       <form onSubmit={onSubmit} className="flex gap-2">

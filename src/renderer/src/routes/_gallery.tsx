@@ -31,17 +31,18 @@ function GalleryLayout() {
     void navigate({ to: '/', search: (prev) => ({ ...prev, ...patch }) })
   }
 
+  // The toolbar floats over the gallery, which scrolls underneath it (REQ-013-03).
   return (
     <>
-      <GalleryToolbar
-        search={search}
-        onSearchChange={onSearchChange}
-        view={view}
-        onViewChange={setView}
-        columns={columns}
-        onColumnsChange={setColumns}
-      />
-      <div ref={gridRef} className="min-h-0 flex-1">
+      <div ref={gridRef} className="relative min-h-0 flex-1">
+        <GalleryToolbar
+          search={search}
+          onSearchChange={onSearchChange}
+          view={view}
+          onViewChange={setView}
+          columns={columns}
+          onColumnsChange={setColumns}
+        />
         <Gallery search={search} view={view} columns={columns} hasLibraries={(libraries.data?.length ?? 0) > 0} />
       </div>
       <Outlet />

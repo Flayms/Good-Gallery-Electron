@@ -129,6 +129,7 @@ export function ZoomableImage({ src, alt, onBackdropClick }: ZoomableImageProps)
         src={src}
         alt={alt}
         draggable={false}
+        data-viewer-media
         className="max-h-full max-w-full select-none object-contain"
         style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})` }}
       />

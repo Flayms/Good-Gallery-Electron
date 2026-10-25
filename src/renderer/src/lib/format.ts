@@ -19,3 +19,15 @@ export function formatBytes(bytes: number): string {
   }
   return `${unit === 0 ? value : value.toFixed(1)} ${BYTE_UNITS[unit]}`
 }
+
+const dateTimeFormats = new Map<string | undefined, Intl.DateTimeFormat>()
+
+/** Medium date and short time in the user's locale, without seconds, e.g. `2 Jul 2025, 07:12`. */
+export function formatDateTime(epochMs: number, locale?: string): string {
+  let format = dateTimeFormats.get(locale)
+  if (!format) {
+    format = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' })
+    dateTimeFormats.set(locale, format)
+  }
+  return format.format(epochMs)
+}

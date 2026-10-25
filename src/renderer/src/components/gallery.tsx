@@ -1,6 +1,7 @@
 import { Link, useParams } from '@tanstack/react-router'
 import { FolderPlusIcon, ImagesIcon, TriangleAlertIcon } from 'lucide-react'
 import { type ReactNode, useCallback, useMemo } from 'react'
+import { APP_HEADER_HEIGHT } from '@/components/app-header'
 import { JustifiedRows } from '@/components/justified-rows'
 import { MasonryGrid } from '@/components/masonry-grid'
 import { MediaList } from '@/components/media-list'
@@ -10,8 +11,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useGalleryMedia } from '@/hooks/use-gallery-media'
 import type { GalleryView } from '@/hooks/use-gallery-view'
 import type { GallerySearch } from '@/lib/search'
+import { cn } from '@/lib/utils'
 
-const GAP = 8
+/** From this zoom level on, tiles are small: narrower gaps and corners. */
+const DENSE_COLUMNS = 8
 const SKELETON_HEIGHTS = [220, 160, 280, 190, 240, 150, 260, 200, 170, 230, 180, 250]
 const SQUARE = () => 1
 
@@ -28,7 +31,7 @@ function EmptyState({ icon, title, children }: { icon: ReactNode; title: string;
 function GallerySkeleton({ view, columns }: { view: GalleryView; columns: number }) {
   if (view === 'list') {
     return (
-      <div className="flex flex-col gap-3 overflow-hidden p-3">
+      <div className="flex flex-col gap-3 overflow-hidden p-3" style={{ paddingTop: APP_HEADER_HEIGHT + 12 }}>
         {Array.from({ length: 12 }, (_, i) => i).map((row) => (
           <Skeleton key={`row-${row}`} className="h-10" />
         ))}
@@ -36,7 +39,7 @@ function GallerySkeleton({ view, columns }: { view: GalleryView; columns: number
     )
   }
   return (
-    <div className="flex gap-2 overflow-hidden p-3">
+    <div className="flex gap-2 overflow-hidden p-3" style={{ paddingTop: APP_HEADER_HEIGHT + 12 }}>
       {Array.from({ length: columns }, (_, i) => i).map((column) => (
         <div key={`column-${column}`} className="flex min-w-0 flex-1 flex-col gap-2">
           {[0, 1, 2].map((row) => (
@@ -105,14 +108,20 @@ export function Gallery({
         getItem={getItem}
         onRangeChange={setRange}
         scrollToIndex={viewedIndex}
+        insetTop={APP_HEADER_HEIGHT}
         className="py-1"
       />
     )
   }
 
+  const dense = columns >= DENSE_COLUMNS
   const renderTile = (index: number, size: { width: number }) => {
     const item = getItem(index)
-    return item ? <MediaTile item={item} width={size.width} /> : <div className="size-full rounded-md bg-muted" />
+    return item ? (
+      <MediaTile item={item} width={size.width} dense={dense} />
+    ) : (
+      <div className={cn('size-full bg-muted', dense ? 'rounded-xs' : 'rounded-sm')} />
+    )
   }
   const Layout = view === 'justified' ? JustifiedRows : MasonryGrid
   return (
@@ -121,9 +130,10 @@ export function Gallery({
       getKey={getKey}
       aspectAt={view === 'grid' ? SQUARE : aspectAt}
       columns={columns}
-      gap={GAP}
+      gap={dense ? 4 : 8}
       onRangeChange={setRange}
       scrollToIndex={viewedIndex}
+      insetTop={APP_HEADER_HEIGHT}
       className="p-3"
       renderItem={renderTile}
     />

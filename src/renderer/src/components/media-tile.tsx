@@ -7,6 +7,7 @@ import { formatDuration } from '@/lib/format'
 import { thumbhashDataUrl } from '@/lib/thumbhash'
 import type { RouterOutputs } from '@/lib/trpc'
 import { cn } from '@/lib/utils'
+import { markTransitionSource } from '@/lib/view-transition'
 
 export type MediaItem = RouterOutputs['media']['byIds'][number]
 
@@ -15,11 +16,14 @@ export function MediaThumbnail({
   item,
   width,
   badge = true,
+  dense = false,
 }: {
   item: MediaItem
   width: number
   /** Whether videos show a play badge with their duration (too big for small thumbnails). */
   badge?: boolean
+  /** Small tiles at high zoom levels get smaller corners. */
+  dense?: boolean
 }) {
   const [state, setState] = useState<'loading' | 'loaded' | 'failed'>('loading')
   const placeholder = useMemo(() => (item.thumbhash ? thumbhashDataUrl(item.thumbhash) : undefined), [item.thumbhash])
@@ -27,7 +31,10 @@ export function MediaThumbnail({
 
   return (
     <div
-      className="relative size-full overflow-hidden rounded-md bg-muted bg-cover bg-center"
+      className={cn(
+        'relative size-full overflow-hidden bg-muted bg-cover bg-center',
+        dense ? 'rounded-xs' : 'rounded-sm',
+      )}
       style={placeholder ? { backgroundImage: `url("${placeholder}")` } : undefined}
     >
       {failed ? (
@@ -43,7 +50,7 @@ export function MediaThumbnail({
           onLoad={() => setState('loaded')}
           onError={() => setState('failed')}
           className={cn(
-            'size-full object-cover transition-opacity duration-300',
+            'size-full object-cover transition-opacity duration-(--duration-base)',
             state === 'loaded' ? 'opacity-100' : 'opacity-0',
           )}
         />
@@ -58,7 +65,7 @@ export function MediaThumbnail({
   )
 }
 
-export function MediaTile({ item, width }: { item: MediaItem; width: number }) {
+export function MediaTile({ item, width, dense }: { item: MediaItem; width: number; dense?: boolean }) {
   return (
     <MediaContextMenu id={item.id}>
       <Link
@@ -67,9 +74,12 @@ export function MediaTile({ item, width }: { item: MediaItem; width: number }) {
         search={(prev) => prev}
         title={item.fileName}
         draggable={false}
-        className="block size-full rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        data-media-id={item.id}
+        viewTransition
+        onClick={() => markTransitionSource(item.id)}
+        className={cn('block size-full', dense ? 'rounded-xs' : 'rounded-sm')}
       >
-        <MediaThumbnail item={item} width={width} />
+        <MediaThumbnail item={item} width={width} dense={dense} />
       </Link>
     </MediaContextMenu>
   )

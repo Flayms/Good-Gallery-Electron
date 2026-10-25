@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useSearch } from '@tanstack/react-router'
-import { MinusIcon, TagIcon } from 'lucide-react'
+import { MinusIcon } from 'lucide-react'
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -39,7 +39,7 @@ export function PopularTags() {
                   })}
                   title={mode ? `Remove ${tag.name} from the filter` : `Show only ${tag.name}`}
                 >
-                  {mode === 'exclude' ? <MinusIcon className="text-destructive" /> : <TagIcon />}
+                  {mode === 'exclude' && <MinusIcon className="text-destructive" />}
                   <span>{tag.name}</span>
                 </Link>
               </SidebarMenuButton>

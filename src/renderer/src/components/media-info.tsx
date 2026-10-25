@@ -3,7 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { StarIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Badge } from '@/components/ui/badge'
-import { formatBytes, formatDuration } from '@/lib/format'
+import { formatBytes, formatDateTime, formatDuration } from '@/lib/format'
 import { withTag } from '@/lib/search'
 import type { RouterOutputs } from '@/lib/trpc'
 import { cn } from '@/lib/utils'
@@ -25,7 +25,10 @@ export function Rating({ value }: { value: number }) {
   return (
     <div className="flex gap-0.5" role="img" aria-label={`Rated ${value} out of 5`}>
       {[1, 2, 3, 4, 5].map((star) => (
-        <StarIcon key={star} className={cn('size-4', star <= value ? 'fill-current' : 'text-muted-foreground')} />
+        <StarIcon
+          key={star}
+          className={cn('size-4', star <= value ? 'fill-current text-star' : 'text-muted-foreground')}
+        />
       ))}
     </div>
   )
@@ -65,8 +68,8 @@ export function MediaInfo({ item }: { item: MediaDetails }) {
           <span className="select-text break-all">{item.path}</span>
         </Field>
         <Field label="Library">{item.rootLabel}</Field>
-        {item.takenAt !== null && <Field label="Taken">{new Date(item.takenAt).toLocaleString()}</Field>}
-        <Field label="Modified">{new Date(item.mtime).toLocaleString()}</Field>
+        {item.takenAt !== null && <Field label="Taken">{formatDateTime(item.takenAt)}</Field>}
+        <Field label="Modified">{formatDateTime(item.mtime)}</Field>
         {item.width !== null && item.height !== null && (
           <Field label="Dimensions">
             {item.width} × {item.height}

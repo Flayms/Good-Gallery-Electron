@@ -14,6 +14,8 @@ import { appRouter } from './trpc/router'
 import type { Desktop } from './trpc/trpc'
 
 const OFFLINE_RETRY_MS = 60_000
+/** Matches the toolbar height in the renderer (`h-12`). */
+const TITLE_BAR_HEIGHT = 48
 
 // Isolated profile for e2e tests, which also run against packaged builds.
 if (process.env.GG_USER_DATA_DIR) app.setPath('userData', process.env.GG_USER_DATA_DIR)
@@ -31,8 +33,13 @@ function createWindow(): void {
     minWidth: 800,
     minHeight: 600,
     show: false,
-    backgroundColor: '#09090b',
+    backgroundColor: '#1f1f1f',
     autoHideMenuBar: true,
+    // The toolbar is the title bar; the native window controls float over it and the renderer keeps their area free
+    // (`env(titlebar-area-*)`). Colors apply on Windows and Linux; on macOS the overlay enables the same CSS API.
+    titleBarStyle: 'hidden',
+    titleBarOverlay: { color: '#00000000', symbolColor: '#f2f2f2', height: TITLE_BAR_HEIGHT },
+    trafficLightPosition: { x: 16, y: 16 },
     webPreferences: {
       preload: join(import.meta.dirname, '../preload/index.cjs'),
       contextIsolation: true,

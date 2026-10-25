@@ -61,6 +61,91 @@ async function createLibrary(dir: string): Promise<void> {
   ])
 }
 
+type WindowControlsOverlay = { visible: boolean; getTitlebarAreaRect(): DOMRect }
+
+/** Where the toolbar's controls sit relative to each other and to the native window controls. */
+function toolbarLayout(page: Page) {
+  return page.evaluate(() => {
+    const overlay = (navigator as Navigator & { windowControlsOverlay: WindowControlsOverlay }).windowControlsOverlay
+    const header = document.querySelector('header')
+    if (!header) throw new Error('No header')
+    const free = overlay.getTitlebarAreaRect()
+    const controls = [...header.querySelectorAll<HTMLElement>('button, input')].filter(
+      (control) => control.getClientRects().length > 0,
+    )
+    const boxes = controls.map((control) => ({
+      name: control.getAttribute('aria-label') ?? control.textContent ?? '',
+      rect: control.getBoundingClientRect(),
+    }))
+    const overlap = (a: DOMRect, b: DOMRect) =>
+      a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom
+    return {
+      overlay: overlay.visible,
+      headerRegion: getComputedStyle(header).getPropertyValue('app-region'),
+      controlRegions: [...new Set(controls.map((control) => getComputedStyle(control).getPropertyValue('app-region')))],
+      names: boxes.map((box) => box.name),
+      outside: boxes
+        .filter(({ rect }) => rect.left < free.left || rect.right > free.right || rect.bottom > free.bottom)
+        .map((box) => box.name),
+      overlapping: boxes.flatMap((a, i) =>
+        boxes.slice(i + 1).flatMap((b) => (overlap(a.rect, b.rect) ? [`${a.name} / ${b.name}`] : [])),
+      ),
+      scrolls: header.scrollWidth > header.clientWidth,
+    }
+  })
+}
+
+type TransitionRecord = { tile: string; viewer: string; animations: number }
+
+/** Records the view transitions the app starts, with the transition names of the tile and the viewer's media. */
+function recordViewTransitions(page: Page): Promise<void> {
+  return page.evaluate(() => {
+    const target = window as Window & {
+      transitions?: TransitionRecord[]
+      startViewTransition?: typeof document.startViewTransition
+    }
+    target.transitions = []
+    // Wraps the original only once, also when recording starts over.
+    target.startViewTransition ??= document.startViewTransition.bind(document)
+    const start = target.startViewTransition
+    const nameOf = (selector: string) => {
+      const element = document.querySelector(selector)
+      return element ? getComputedStyle(element).viewTransitionName : 'missing'
+    }
+    document.startViewTransition = ((update?: ViewTransitionUpdateCallback) => {
+      const record = { tile: nameOf('[data-vt-source] img'), viewer: nameOf('[data-viewer-media]'), animations: -1 }
+      target.transitions?.push(record)
+      const transition = start(update)
+      transition.ready
+        .then(() => {
+          record.animations = document
+            .getAnimations()
+            .filter((animation) =>
+              (animation.effect as KeyframeEffect | null)?.pseudoElement?.includes('media-hero'),
+            ).length
+        })
+        .catch(() => {})
+      return transition
+    }) as typeof document.startViewTransition
+  })
+}
+
+function viewTransitions(page: Page): Promise<TransitionRecord[] | undefined> {
+  return page.evaluate(() => (window as Window & { transitions?: TransitionRecord[] }).transitions)
+}
+
+/**
+ * Closes the open toolbar menu and waits until it's gone: while it animates out, it still takes the next Escape.
+ */
+async function closeMenu(page: Page): Promise<void> {
+  await page.keyboard.press('Escape')
+  await expect(page.locator('[data-slot=popover-content]')).toHaveCount(0)
+}
+
+function opacity(locator: Locator): Promise<string> {
+  return locator.evaluate((element) => getComputedStyle(element).opacity)
+}
+
 function naturalWidth(image: Locator): Promise<number> {
   return image.evaluate((element) => (element instanceof HTMLImageElement ? element.naturalWidth : 0))
 }
@@ -88,8 +173,9 @@ test.afterAll(async () => {
 
 test('indexes a library, browses it, filters by tag and shows details', async () => {
   const tiles = page.getByRole('link', { name: /\.(jpg|mp4)\b/ })
-  // Radix labels the slider root; the thumb carries the value.
+  // Radix labels the slider root; the thumb carries the value. It sits in the View menu.
   const zoom = page.getByLabel('Zoom', { exact: true }).getByRole('slider')
+  const viewOptions = page.getByRole('button', { name: 'View options' })
 
   await test.step('REQ-001-01, REQ-001-07: adds a library in the settings', async () => {
     await page.getByRole('link', { name: 'Settings' }).click()
@@ -107,6 +193,27 @@ test('indexes a library, browses it, filters by tag and shows details', async ()
     await expect.poll(thumbsLoaded, { timeout: INDEXING_TIMEOUT }).toBe(true)
   })
 
+  await test.step('REQ-013-01, REQ-013-02: bundled typeface and own colors; the toolbar is the title bar', async () => {
+    const look = await page.evaluate(async () => {
+      await document.fonts.ready
+      return {
+        font: getComputedStyle(document.body).fontFamily,
+        loaded: [...document.fonts].some(
+          (face) => face.family.includes('Atkinson Hyperlegible Next') && face.status === 'loaded',
+        ),
+        background: getComputedStyle(document.body).backgroundColor,
+      }
+    })
+    expect(look.font).toMatch(/^"?Atkinson Hyperlegible Next Variable/)
+    expect(look.loaded).toBe(true)
+    expect(look.background).toBe('rgb(31, 31, 31)')
+    const layout = await toolbarLayout(page)
+    expect(layout.overlay).toBe(true)
+    expect(layout.headerRegion).toBe('drag')
+    expect(layout.controlRegions).toEqual(['no-drag'])
+    expect(layout.outside).toEqual([])
+  })
+
   await test.step('REQ-009-01, REQ-009-03: clicking beside the media closes the viewer', async () => {
     // Clicking the black space around the media (not the media itself) closes the viewer, same as Escape.
     await page.getByRole('link', { name: VIDEO }).click()
@@ -121,15 +228,19 @@ test('indexes a library, browses it, filters by tag and shows details', async ()
     await expect(page.getByRole('link', { name: 'Anton' })).toBeVisible()
   })
 
-  await test.step('REQ-007-09: filters by exact rating', async () => {
-    await page.getByRole('button', { name: 'Rating', exact: true }).click()
+  await test.step('REQ-007-07, REQ-007-09, REQ-013-08: filters by rating and media kind under Filters', async () => {
+    await page.getByRole('button', { name: 'Filters', exact: true }).click()
     await page.getByRole('button', { name: '5 stars' }).click()
     await expect(tiles).toHaveCount(1)
-    await page.keyboard.press('Escape')
-    await page.getByRole('button', { name: 'Rating', exact: true }).click()
-    await page.getByRole('button', { name: 'Clear' }).click()
-    await page.keyboard.press('Escape')
+    await expect(page.getByRole('button', { name: 'Filters, 1 active' })).toBeVisible()
+    await page.getByRole('button', { name: 'Clear rating' }).click()
     await expect(tiles).toHaveCount(FIXTURES.length + 1)
+    await page.getByRole('radio', { name: 'Videos' }).click()
+    await expect(tiles).toHaveCount(1)
+    await page.getByRole('button', { name: 'Clear filters' }).click()
+    await expect(tiles).toHaveCount(FIXTURES.length + 1)
+    await expect(page.getByRole('button', { name: 'Filters', exact: true })).toBeVisible()
+    await closeMenu(page)
   })
 
   await test.step('REQ-009-11: shows information from the context menu', async () => {
@@ -147,6 +258,46 @@ test('indexes a library, browses it, filters by tag and shows details', async ()
     await expect(page.getByRole('dialog', { name: names[0] ?? '' })).toBeVisible()
     await page.keyboard.press('ArrowRight')
     await expect(page.getByRole('dialog', { name: names[1] ?? '' })).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('dialog')).toBeHidden()
+  })
+
+  await test.step('REQ-013-09, REQ-013-10, REQ-013-11: immersive, tinted viewer whose controls step aside', async () => {
+    const names = await tiles.evaluateAll((links) => links.map((link) => link.getAttribute('title') ?? ''))
+    // A photo: a video that has ended counts as paused and keeps the controls.
+    const photo = names.findIndex((name, index) => name.endsWith('.jpg') && index < names.length - 1)
+    await tiles.nth(photo).click()
+    const viewer = page.getByRole('dialog', { name: names[photo] })
+    const controls = viewer.getByRole('toolbar', { name: 'Viewer controls' })
+    // Not by name: the name follows the shown item.
+    const state = () =>
+      page.getByRole('dialog').evaluate((element) => ({
+        background: getComputedStyle(element).backgroundColor,
+        backdrop: [...element.querySelectorAll<HTMLElement>('[aria-hidden] > div')].map(
+          (layer) => layer.style.backgroundImage,
+        ),
+        tint: element.style.getPropertyValue('--glass-bar-tinted'),
+      }))
+    await expect.poll(async () => (await state()).tint).toMatch(/^rgb\(/)
+    const first = await state()
+    expect(first.background).toBe('rgb(31, 31, 31)')
+    expect(first.backdrop).toEqual([expect.stringContaining('gg-thumb://')])
+
+    // The mouse rests after the click: the controls fade out, and come back on movement.
+    await expect.poll(() => opacity(controls), { timeout: 6000 }).toBe('0')
+    await page.mouse.move(300, 300)
+    await page.mouse.move(310, 310)
+    await expect.poll(() => opacity(controls)).toBe('1')
+    await page.keyboard.press('i')
+    await page.waitForTimeout(3500)
+    expect(await opacity(controls)).toBe('1')
+    await page.keyboard.press('i')
+
+    await page.keyboard.press('ArrowRight')
+    await expect(page.getByRole('dialog', { name: names[photo + 1] })).toBeVisible()
+    await expect.poll(async () => (await state()).tint).not.toBe(first.tint)
+    // The previous item stays underneath while the next one fades in.
+    expect((await state()).backdrop).toHaveLength(2)
     await page.keyboard.press('Escape')
     await expect(page.getByRole('dialog')).toBeHidden()
   })
@@ -196,30 +347,159 @@ test('indexes a library, browses it, filters by tag and shows details', async ()
 
   await test.step('REQ-006-06: zoom buttons and Ctrl + wheel step the column count', async () => {
     const zoomLevel = async () => Number(await zoom.getAttribute('aria-valuenow'))
+    await viewOptions.click()
     const before = await zoomLevel()
     await page.getByRole('button', { name: 'Zoom in' }).click()
     await expect.poll(zoomLevel).toBe(before + 1)
+    await closeMenu(page)
     await tiles.first().hover()
     await page.keyboard.down('Control')
     await page.mouse.wheel(0, 100)
     await page.keyboard.up('Control')
+    await viewOptions.click()
     await expect.poll(zoomLevel).toBe(before)
+    await closeMenu(page)
   })
 
   await test.step('REQ-006-01, REQ-006-04, REQ-006-05, REQ-009-01: every view shows all media', async () => {
     // The list opens items like the tiles do.
     const views = page.getByRole('radiogroup', { name: 'View' })
     for (const view of ['Justified', 'Grid', 'List', 'Masonry']) {
+      await viewOptions.click()
       await views.getByRole('radio', { name: view, exact: true }).click()
       await expect(tiles).toHaveCount(FIXTURES.length + 1)
+      if (view === 'List') await expect(zoom).toBeDisabled()
+      await closeMenu(page)
       if (view === 'List') {
-        await expect(zoom).toBeDisabled()
         await page.getByRole('link', { name: 'city.jpg' }).click()
         await expect(page.getByRole('dialog', { name: 'city.jpg' })).toBeVisible()
         await page.keyboard.press('Escape')
         await expect(page.getByRole('dialog')).toBeHidden()
       }
     }
+  })
+
+  await test.step('REQ-013-03, REQ-013-05: the gallery scrolls under the glass toolbar; focus shows on photos', async () => {
+    // At two columns the fixtures are taller than the window.
+    await viewOptions.click()
+    await zoom.focus()
+    await page.keyboard.press('End')
+    await closeMenu(page)
+    const glass = await page.evaluate(async () => {
+      const header = document.querySelector('header')
+      const scroller = header?.parentElement?.querySelector<HTMLElement>('.overflow-y-auto')
+      if (!header || !scroller) throw new Error('No toolbar or gallery')
+      scroller.scrollTop = 120
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+      const bottom = header.getBoundingClientRect().bottom
+      const tiles = [...document.querySelectorAll<HTMLElement>('[data-media-id]')]
+      const styles = tiles.flatMap((tile) =>
+        [tile, ...tile.querySelectorAll('*')].map((element) => {
+          const style = getComputedStyle(element)
+          return `${style.backdropFilter} ${style.opacity}`
+        }),
+      )
+      return {
+        toolbar: getComputedStyle(header).backdropFilter,
+        underneath: tiles.some((tile) => {
+          const rect = tile.getBoundingClientRect()
+          return rect.top < bottom && rect.bottom > bottom
+        }),
+        tiles: [...new Set(styles)],
+      }
+    })
+    expect(glass.toolbar).toContain('blur')
+    expect(glass.underneath).toBe(true)
+    expect(glass.tiles).toEqual(['none 1'])
+    await page.getByRole('button', { name: 'Filters', exact: true }).click()
+    const menu = page.locator('[data-slot=popover-content]')
+    expect(await menu.evaluate((element) => getComputedStyle(element).backdropFilter)).toContain('blur')
+    await closeMenu(page)
+
+    // Keyboard focus on a tile: a light ring with a dark ring around it.
+    await tiles.first().focus()
+    await page.keyboard.press('Shift+Tab')
+    await page.keyboard.press('Tab')
+    const ring = await page.evaluate(() => {
+      const element = document.activeElement as HTMLElement
+      const style = getComputedStyle(element)
+      return {
+        tile: element.hasAttribute('data-media-id') && element.matches(':focus-visible'),
+        outline: `${style.outlineStyle} ${style.outlineWidth} ${style.outlineColor}`,
+        shadow: style.boxShadow,
+      }
+    })
+    expect(ring).toEqual({
+      tile: true,
+      outline: 'solid 2px rgb(242, 242, 242)',
+      shadow: expect.stringContaining('rgba(0, 0, 0, 0.6)'),
+    })
+  })
+
+  await test.step('REQ-013-06: glass turns opaque when the OS reduces transparency', async () => {
+    const toolbar = () =>
+      page.evaluate(() => {
+        const style = getComputedStyle(document.querySelector('header') as Element)
+        return `${style.backdropFilter} | ${style.backgroundColor}`
+      })
+    const cdp = await page.context().newCDPSession(page)
+    await cdp.send('Emulation.setEmulatedMedia', {
+      features: [{ name: 'prefers-reduced-transparency', value: 'reduce' }],
+    })
+    expect(await toolbar()).toBe('none | rgb(42, 42, 42)')
+    await cdp.send('Emulation.setEmulatedMedia', { features: [] })
+    expect(await toolbar()).toContain('blur')
+    await cdp.detach()
+  })
+
+  await test.step('REQ-013-12, REQ-013-07: the tile grows into the viewer and back; nothing moves with reduced motion', async () => {
+    const nameOf = (locator: Locator) => locator.evaluate((element) => getComputedStyle(element).viewTransitionName)
+    const tile = page.getByRole('link', { name: 'forest.jpg' })
+    const viewer = page.getByRole('dialog', { name: 'forest.jpg' })
+    await recordViewTransitions(page)
+    await tile.click()
+    await expect(viewer).toBeVisible()
+    expect(await nameOf(viewer.locator('[data-viewer-media]'))).toBe('media-hero')
+    expect(await nameOf(tile.locator('img'))).toBe('none')
+    await page.keyboard.press('Escape')
+    await expect(viewer).toBeHidden()
+    expect(await nameOf(tile.locator('img'))).toBe('media-hero')
+    await expect
+      .poll(async () => (await viewTransitions(page))?.map(({ tile, viewer }) => `${tile} → ${viewer}`))
+      .toEqual(['media-hero → missing', 'none → media-hero'])
+    await expect.poll(async () => (await viewTransitions(page))?.every(({ animations }) => animations > 0)).toBe(true)
+
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await recordViewTransitions(page)
+    await tile.click()
+    await expect(viewer).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(viewer).toBeHidden()
+    await expect.poll(async () => (await viewTransitions(page))?.map(({ animations }) => animations)).toEqual([0, 0])
+    // Panels only fade in: no zooming or sliding.
+    await page.getByRole('button', { name: 'Filters', exact: true }).click()
+    const motion = await page.locator('[data-slot=popover-content]').evaluate((element) => {
+      const style = getComputedStyle(element)
+      return ['--tw-enter-scale', '--tw-enter-translate-x', '--tw-enter-translate-y'].map((name) =>
+        style.getPropertyValue(name).trim(),
+      )
+    })
+    expect(motion).toEqual(['1', '0', '0'])
+    await closeMenu(page)
+    await page.emulateMedia({ reducedMotion: null })
+  })
+
+  await test.step('REQ-013-08: every toolbar control fits the minimum window size', async () => {
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(800, 600))
+    await expect.poll(() => page.evaluate(() => innerWidth)).toBeLessThanOrEqual(800)
+    const layout = await toolbarLayout(page)
+    expect(layout.names).toEqual(
+      expect.arrayContaining(['Toggle Sidebar', 'Search tags or file names', 'Filters', 'View options']),
+    )
+    expect(layout.outside).toEqual([])
+    expect(layout.overlapping).toEqual([])
+    expect(layout.scrolls).toBe(false)
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(1400, 900))
   })
 
   await test.step('REQ-010-05, REQ-010-06: changes the cache limit and clears the cache', async () => {
