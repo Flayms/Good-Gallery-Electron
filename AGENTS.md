@@ -1,74 +1,52 @@
 # AGENTS.md
 
-* See [README.md](README.md) for features, scripts, architecture and tech stack.
+A Windows desktop gallery for large photo and video libraries (50k–500k files). Media appear in a virtualized masonry, justified, grid or list view. Libraries on network shares are supported, and thumbnails are cached locally. Search uses the tags that are already embedded in your files.
 
-The role of this file is to describe common mistakes and confusion points that agents might encounter as they work in this project. If you ever encounter something in this project that surprises you, please alert the developer working with you and indicate that this is the case in the AGENTS.md file to help prevent future agents from having the same issue.
+## Orientation
 
-## General
+| Document                 | Why                                                                                                               |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `README.md`              | User facing description                                                                                           |
+| `docs/architecture.md`   | Architecture overview                                                                                             |
+| `docs/glossary.md`       | Definitions of domain terms                                                                                       |
+| `docs/known-pitfalls.md` | if you encounter problems or pitfalls add them here, either to avoid them in the future or for us to fix later on |
 
-Be brief in your responses.
+## Project
 
-## Planning Phase Guidelines
+- Stack: Electron + electron-vite, React, TanStack, shadcn/ui, tRPC over IPC, SQLite (better-sqlite3 + Drizzle), sharp / exiftool / ffmpeg. Details in `docs/architecture.md`.
+- Test: `pnpm test` (e2e: `pnpm test:e2e`) · Lint: `pnpm format` + `pnpm typecheck` · Run: `pnpm dev`
+
+## Principles
 
 > [!NOTE]
-> These are no absolutes, just guidelines where you need to decide if it's appropriate to apply them based on the specific situation.
+> These are no absolutes, decide when it's appropriate to apply them.
 
-* **Follow SOLID principles:** Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion.
-* Decide when it's appropriate to apply DRY, YAGNI and KISS.
-* Follow the tech stack instead of rolling your own implementations.
-* Keep [README.md](README.md) up to date when features, scripts or the architecture change.
+- Follow SOLID principles: Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion.
+- Decide when it's appropriate to apply DRY, YAGNI and KISS.
+- spec-first, TDD (red → green → refactor), BDD acceptance criteria. DDD only where the domain warrants it; always use domain terms (`docs/glossary.md`).
 
-## Linting
+## Tiers
 
-After applying your changes, you **MUST** run the following commands, fix errors even if they are pre-existing:
-1. `pnpm format` - auto format & lint (Biome), resolve remaining issues manually.
-2. `pnpm typecheck` - check for type errors (TS 7, node + web + e2e projects) and fix them.
-3. `pnpm test` - decide if test errors are caused by logic changes or test issues and fix either the logic or the tests.
+0. No behavior change → tests pass.
+1. Bug (code violates a REQ) → regression test referencing the REQ, then fix.
+2. Small feature or spec gap → `spec.md` first. A wrong or missing spec is a spec change, not a bug.
+3. Large or architectural → `spec.md` + `plan.md` (with tasks); wait for approval before implementing.
 
-When resolving linting / typechecking errors, do not go the lazy route that makes the linter happy. Instead explain why the linter is complaining and fix the underlying issue. Prefer type guards, early returns and descriptive errors over type casts and generics fallbacks. If it's not that easy to fix, explain the issue and your proposed solution before implementing it.
+## Specs
 
-## Dependency Placement (`dependencies` vs `devDependencies`)
+`specs/NNN-name/`. IDs are `REQ-NNN-XX`: never reused, deprecated rather than deleted, and referenced in tests. Spec and code change together.
 
-This is an **Electron app** built with `electron-vite`, which bundles renderer/preload and **externalizes `dependencies`** in the main process.
+- `spec.md`: Status, Goal, Requirements (Given/When/Then), Out of scope, Assumptions, Verification (REQ | test | result). No implementation details.
+- `plan.md`: Approach, Tasks (linked to REQs).
 
-* `dependencies` - only packages loaded at runtime by main / indexer: native addons (`better-sqlite3`, later `sharp`, `exiftool-vendored`, `ffmpeg-static`) and main-process libs (`@trpc/server`, `drizzle-orm`, `zod`, `superjson`).
-* `devDependencies` - everything else (React, UI libs, tooling). `shadcn add` puts renderer deps into `dependencies` - move them.
+## Definition of Done
 
-Only add a package if you import it directly; don't list transitive deps.
+- Every REQ in scope has a test that you saw fail, then pass.
+- Full test suite and lint run in this session and pass.
+- Verification table and spec status updated.
+- No unrelated changes.
+- Summary: tier, REQs touched, results, open issues.
 
-## Test Guidelines
+## Git
 
-* Test behaviour, not implementation.
-* Follow the test pyramid.
-* Tests live next to the code as `*.test.ts(x)`.
-
-## Known Pitfalls
-
-* **pnpm `minimumReleaseAge`** blocks very new versions (and the non-TTY prompt fails). Pick an older patch, don't bypass it.
-* **pnpm settings** live in `pnpm-workspace.yaml`. pnpm adds placeholder `"set this to true or false"` entries on ignored builds - remove duplicates.
-* **Native builds:** `better-sqlite3` 13 uses N-API prebuilds; `allowBuilds` is false because node-gyp / Visual Studio isn't installed. Don't add `electron-builder install-app-deps`.
-* **`postinstall` runs `install-electron`** - electron-vite needs `node_modules/electron/path.txt`.
-* **Preload must be CJS** (`index.cjs`) for the sandbox; main is ESM.
-* **drizzle-kit breaks expression indexes** - use generated columns instead. Generate migrations with `pnpm db:generate`, don't hand-write them.
-  * Triggers aren't modelled by drizzle-kit: create an empty migration with `pnpm db:generate --custom --name <name>` and separate statements with `--> statement-breakpoint` (the migrator prepares each chunk as one statement).
-* **Folder mtimes** (quick scans) only change when direct children are added, removed or renamed - not on in-place edits or changes deeper down. Don't use them to skip whole subtrees or file stats outside `quick` scans.
-* **`fs.watch` on Windows reports last-access changes** too, so the indexer's own reads cause events; `changes` scans must keep stating only reported files.
-* **SQLite query plans:** tag filters in `main/db/tag-search.ts` rely on unary `+` (`+media.id`, `+tag_id`) to pin plans; removing them looks harmless but makes common-tag searches 10–100× slower.
-* **`media.meta_version`** (vs `shared/metadata.ts` `METADATA_VERSION`) is how the indexer tells "unchanged file" apart from "unchanged file, old extractor". Bump the constant whenever `indexer/metadata.ts` extraction changes - otherwise already-indexed files keep stale/missing fields (rating, face-region tags, ...) until their content next changes. `main/rescan.ts` upgrades a root to a full scan while any of its rows are behind.
-* **shadcn `SidebarMenuBadge`** positions itself via a `peer-data-[size=*]/menu-button` selector that only matches an adjacent `SidebarMenuButton` sibling, not `SidebarMenuSubButton` (no `peer/menu-button` marker) - it silently loses its vertical offset there. `folder-tree.tsx` / `tag-tree.tsx` show counts via `title` instead at the `Sub` level.
-* **shadcn:** the framework isn't auto-detected; `pnpm dlx shadcn@latest add <comp>` works with the existing `components.json`.
-* **Biome:** `biome migrate` may set the linter preset to `"none"` - keep `"recommended"`.
-* **Runtime verification of the renderer:** `pnpm dev -- --remote-debugging-port=9333`, then use CDP `Runtime.evaluate` from a temporary `.mjs` script (inline `node -e` quoting breaks in pwsh).
-  * Also pass `--disable-features=CalculateNativeWinOcclusion --disable-backgrounding-occluded-windows`: a window hidden behind the editor is `visibilityState: hidden`, so `ResizeObserver` never fires and the masonry grid stays empty.
-  * `location.reload()` is swallowed by the navigation guard; reload via CDP `Page.reload`.
-  * Put longer expressions into a `.js` file read by the script (pwsh mangles quotes) and redirect its output to a file (`*> out.txt`); piped node output sometimes vanishes in the agent terminal.
-* **Route tree:** `src/renderer/src/route-tree.gen.ts` is generated by the router Vite plugin. After adding/renaming routes, run `pnpm build` (or `dev`) before `pnpm typecheck`.
-* **Custom protocol URLs** need a non-numeric host (`gg-thumb://media/<id>/<w>`): standard schemes turn `//12` into the IPv4 host `0.0.0.12`.
-* **sharp `rotate()` + `flop()` order** doesn't match its docs; the EXIF orientation mapping in `indexer/thumbnail.ts` is pinned by a test against `autoOrient()`.
-* **e2e:** `pnpm test:e2e` builds first; `pnpm exec playwright test` reuses `out/`. `GG_E2E_APP=<exe>` targets a packaged build.
-  * Playwright's `getByLabel` doesn't find the tag search input (it has both `aria-label` and a `<label htmlFor>`); use `getByRole('combobox', { name })`.
-  * Role names match substrings by default: `button 'Rating'` also hits the sidebar's `Ratings` trigger. Use `exact: true`.
-  * The Radix `Slider` puts its `aria-label` on the root, not on the `slider` thumb: `getByLabel('Zoom', { exact: true }).getByRole('slider')`.
-  * The tag suggestions stay open after picking one and cover the grid; press Escape before clicking tiles.
-  * `evaluate` callbacks need DOM types: they come from `tsconfig.e2e.json`. Don't add `/// <reference lib="dom" />` to node-project files - it leaks into main and breaks `Buffer`/stream `BodyInit` types.
-* **electron-builder** sometimes fails with `EPERM ... rename` while extracting NSIS into its cache; rerunning `pnpm exec electron-builder --win` works.
+Stay on the current branch. commit or push only if explicitly asked for.
