@@ -37,5 +37,6 @@
 * **`color-mix()` with `transparent`** lowers the alpha of the result. Don't mix an optional tint into translucent glass that way; compute the tinted color (`lib/ambient.ts`).
 * **A closing Radix popover still takes Escape:** while a menu animates out (≈ 100 ms), its dismiss layer handles the next Escape and calls `preventDefault()`, so the viewer ignores it. e2e: close menus with `closeMenu()`, which waits until the menu is gone.
 * **tw-animate-css ignores reduced motion:** its zoom and slide values are reset in the `motion` layer of `styles.css`. Component classes set them, so the reset must sit in a layer after `utilities`.
+* **View transitions take all hit tests while they run** (≈ 320 ms): `elementsFromPoint()` and clicks only reach the `::view-transition` overlay. e2e: poll for the state after opening or closing the viewer.
 * **View transition names must be unique:** the tile and the viewer's media only share `media-hero` one at a time (`:has([data-viewer])` in `styles.css`); with a duplicate name the browser skips the transition.
 * **Scroll performance at high zoom** (open issue, measured 2026-10-25 for spec 013): fast scrolling (1440 px/s) at 12 columns over 3 000 photos drops frames with or without glass (p95 frame time ≈ 110 ms, vs ≈ 17–28 ms at 5 columns). Glass toolbars and panels added no measurable cost.

@@ -12,7 +12,7 @@ A personal archive of photos and videos, often on a NAS, browsed by one person w
 
 1. **Photos are the only color.** Chrome is neutral grey with no hue, like the neutral backgrounds of photo-editing tools, so it doesn't shift how colors in a photo are perceived. Hue appears only where it carries meaning (rating stars, errors) or comes from the photo itself.
 2. **Glass only over real content.** Translucent surfaces exist where something worth seeing is behind them: the gallery under the toolbar, the photo under the viewer controls, the window under a menu. No decorative gradients or blobs behind glass.
-3. **One loud idea.** In the viewer, the photo becomes its own backdrop and tints the chrome around it. Everything else stays quiet so this can be noticed.
+3. **One loud idea.** The viewer floats over the blurred, darkened window, so the user still senses where they were, and the photo tints the chrome around it. Everything else stays quiet so this can be noticed.
 4. **The same on every platform.** Windows, macOS and Linux look identical: bundled font, own colors, no OS materials (Mica, vibrancy). Only the native window controls differ.
 5. **Dense, but legible.** Libraries are large and the user scans a lot of names and numbers. Prefer compact layouts and tabular figures, but never trade away contrast or hit size.
 
@@ -25,7 +25,8 @@ A personal archive of photos and videos, often on a NAS, browsed by one person w
 | Glass bar       | `glass-bar`   | `rgb(28 28 28 / 0.72)`, blur 24px, saturate 160 %, Rim    | Toolbar, viewer control bar, viewer arrows                   |
 | Glass panel     | `glass-panel` | `rgb(36 36 36 / 0.86)`, blur 32px, saturate 140 %, Rim    | Menus, popovers, select lists, command list, dialogs, sheets, info panel |
 | Field           | `bg-field`    | `rgb(0 0 0 / 0.35)`                                       | Inputs and the search bar on glass                           |
-| Raised          | —             | `#2A2A2A`                                                 | Opaque fallback for both glass levels                        |
+| Scrim           | `glass-scrim` | `rgb(0 0 0 / 0.5)`, blur 28px, saturate 120 %             | The whole window behind the viewer                           |
+| Raised          | —             | `#2A2A2A`                                                 | Opaque fallback for both glass levels (Darkroom for the Scrim) |
 
 Rules:
 
@@ -126,6 +127,7 @@ lucide, 16px, stroke 1.75. An icon earns its place when it helps scanning or rep
 | 2026-10-25 | No OS materials (Mica, vibrancy), native window controls kept | macOS and Linux are planned and should look the same. Replacing window controls would feel foreign on each OS. |
 | 2026-10-25 | Achromatic chrome, no brand accent                        | Neutral chrome doesn't bias how photo colors are perceived. The viewer's Ambient is the color moment. |
 | 2026-10-25 | Atkinson Hyperlegible Next instead of Geist               | Distinct `I l 1` / `O 0` for file names, legible at small sizes on glass, tabular figures, bundled for all platforms. |
+| 2026-10-25 | Viewer over the blurred window, not over a blurred copy of the photo | Users keep a sense of where they came from in the gallery (REQ-013-14 replaces REQ-013-09). |
 | 2026-10-25 | Dark only                                                 | A light theme is out of scope for now. Tokens stay semantic so it can be added later.    |
 | 2026-10-25 | Glass over the scrolling gallery                         | Measured on 3 000 photos: no frame-time cost compared with an opaque toolbar (see `known-pitfalls.md`). |
 | 2026-10-25 | Glass bar at 0.72 and panel at 0.86 opacity               | Over a white photo: Paper on the bar 6.0:1, Mist on a Field on the bar 5.4:1 (on the bare bar only 3.3:1, hence the Field rule), Paper / Mist on the panel 8.9:1 / 4.8:1. |

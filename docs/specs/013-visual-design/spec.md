@@ -4,7 +4,7 @@
 
 ## Goal
 
-Good Gallery gets its own look instead of the shadcn defaults. The photos are the only color, and controls float over them as glass. The toolbar fits small windows, the viewer is immersive and takes its color from the photo, and the app looks the same on Windows, macOS and Linux. Design decisions and tokens are recorded in [docs/design.md](../../design.md).
+Good Gallery gets its own look instead of the shadcn defaults. The photos are the only color, and controls float over them as glass. The toolbar fits small windows, the viewer floats over the blurred window and takes its color from the photo, and the app looks the same on Windows, macOS and Linux. Design decisions and tokens are recorded in [docs/design.md](../../design.md).
 
 ## Requirements
 
@@ -63,7 +63,9 @@ Good Gallery gets its own look instead of the shadcn defaults. The photos are th
 - **And** the media kind, date and rating filters are grouped under _Filters_, which shows how many of them are active and offers _Clear filters_
 - **And** gallery view, zoom, sort field and sort direction are grouped under _View_
 
-### REQ-013-09 · Immersive viewer
+### ~~REQ-013-09 · Immersive viewer~~
+
+Deprecated 2026-10-25: a backdrop made from the item itself hides where the user came from. Replaced by REQ-013-14.
 
 - **Given** the viewer
 - **When** it shows a media item
@@ -97,6 +99,14 @@ Good Gallery gets its own look instead of the shadcn defaults. The photos are th
 - **When** it is formatted
 - **Then** it uses the user's locale in medium length, with hours and minutes but without seconds (e.g. "2 Jul 2025, 07:12")
 
+### REQ-013-14 · Viewer over the blurred window
+
+- **Given** the viewer
+- **When** it shows a media item
+- **Then** the whole window behind it (gallery, toolbar and sidebar) stays visible around the item, blurred and darkened, so the user keeps a sense of where they were
+- **And** the item and the viewer's controls stand out clearly against it
+- **And** with reduced transparency (REQ-013-06) the area around the item is opaque instead
+
 ## Out of scope
 
 - A light theme or following the OS light / dark setting (the app stays dark).
@@ -124,8 +134,9 @@ Good Gallery gets its own look instead of the shadcn defaults. The photos are th
 | REQ-013-06 | `e2e/smoke.spec.ts` (emulated reduced transparency makes the toolbar opaque) | pass |
 | REQ-013-07 | `e2e/smoke.spec.ts` (no transition animations, panels without zoom or slide) | pass |
 | REQ-013-08 | `src/renderer/src/lib/search.test.ts` › filters grouped under Filters; `e2e/smoke.spec.ts` (Filters count and _Clear filters_, toolbar at 800 × 600) | pass |
-| REQ-013-09 | `e2e/smoke.spec.ts` (opaque viewer, blurred backdrop of the item, previous layer kept while stepping) | pass |
+| ~~REQ-013-09~~ | — | no test (deprecated) |
 | REQ-013-10 | `src/renderer/src/lib/idle.test.ts` › IdleTimer; controlsHidden; `e2e/smoke.spec.ts` (controls fade out, return on movement, stay with the info panel) | pass |
 | REQ-013-11 | `src/renderer/src/lib/ambient.test.ts` › ambientTint; `src/renderer/src/design-tokens.test.ts` › text stays legible on glass tinted by any photo; `e2e/smoke.spec.ts` (tint follows the item) | pass |
 | REQ-013-12 | `e2e/smoke.spec.ts` (tile and viewer share the transition name, animated both ways) | partial: the fade when the tile isn't rendered is untested |
 | REQ-013-13 | `src/renderer/src/lib/format.test.ts` › formatDateTime | pass |
+| REQ-013-14 | `e2e/smoke.spec.ts` (transparent viewer, blurred scrim, sidebar still painted behind, opaque with reduced transparency) | pass |

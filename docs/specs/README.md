@@ -18,7 +18,7 @@ Specs 001–011 were written retrospectively (2026-10-25) for features built bef
 | [010-settings](010-settings/spec.md)                     | Indexing and thumbnail cache settings                            | Implemented |
 | [011-security](011-security/spec.md)                     | Renderer isolation, API and file access boundaries               | Implemented |
 | [012-spec-consistency](012-spec-consistency/spec.md)     | Check that specs and tests reference each other                  | Implemented |
-| [013-visual-design](013-visual-design/spec.md)           | Glass chrome, typeface, compact toolbar, immersive viewer        | Implemented |
+| [013-visual-design](013-visual-design/spec.md)           | Glass chrome, typeface, compact toolbar, viewer over the blur    | Implemented |
 
 ## Conventions
 

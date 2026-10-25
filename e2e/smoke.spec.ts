@@ -262,7 +262,7 @@ test('indexes a library, browses it, filters by tag and shows details', async ()
     await expect(page.getByRole('dialog')).toBeHidden()
   })
 
-  await test.step('REQ-013-09, REQ-013-10, REQ-013-11: immersive, tinted viewer whose controls step aside', async () => {
+  await test.step('REQ-013-14, REQ-013-10, REQ-013-11: tinted viewer over the blurred window; controls step aside', async () => {
     const names = await tiles.evaluateAll((links) => links.map((link) => link.getAttribute('title') ?? ''))
     // A photo: a video that has ended counts as paused and keeps the controls.
     const photo = names.findIndex((name, index) => name.endsWith('.jpg') && index < names.length - 1)
@@ -271,17 +271,35 @@ test('indexes a library, browses it, filters by tag and shows details', async ()
     const controls = viewer.getByRole('toolbar', { name: 'Viewer controls' })
     // Not by name: the name follows the shown item.
     const state = () =>
-      page.getByRole('dialog').evaluate((element) => ({
-        background: getComputedStyle(element).backgroundColor,
-        backdrop: [...element.querySelectorAll<HTMLElement>('[aria-hidden] > div')].map(
-          (layer) => layer.style.backgroundImage,
-        ),
-        tint: element.style.getPropertyValue('--glass-bar-tinted'),
-      }))
+      page.getByRole('dialog').evaluate((element) => {
+        const backdrop = element.querySelector('[data-viewer-backdrop]')
+        const backdropStyle = backdrop ? getComputedStyle(backdrop) : undefined
+        return {
+          background: getComputedStyle(element).backgroundColor,
+          blur: backdropStyle?.backdropFilter,
+          scrim: backdropStyle?.backgroundColor,
+          // The sidebar is still painted behind the viewer.
+          behind: document.elementsFromPoint(40, 300).some((other) => other.closest('[data-sidebar=sidebar]')),
+          tint: element.style.getPropertyValue('--glass-bar-tinted'),
+        }
+      })
     await expect.poll(async () => (await state()).tint).toMatch(/^rgb\(/)
+    // Polls: while the opening view transition runs, its overlay takes all hit tests.
+    await expect.poll(state).toMatchObject({
+      background: 'rgba(0, 0, 0, 0)',
+      blur: expect.stringContaining('blur'),
+      scrim: expect.stringMatching(/^rgba\(0, 0, 0, 0\.\d+\)$/),
+      behind: true,
+    })
     const first = await state()
-    expect(first.background).toBe('rgb(31, 31, 31)')
-    expect(first.backdrop).toEqual([expect.stringContaining('gg-thumb://')])
+    // With reduced transparency, the area around the item is opaque.
+    const cdp = await page.context().newCDPSession(page)
+    await cdp.send('Emulation.setEmulatedMedia', {
+      features: [{ name: 'prefers-reduced-transparency', value: 'reduce' }],
+    })
+    expect(await state()).toMatchObject({ blur: 'none', scrim: 'rgb(31, 31, 31)' })
+    await cdp.send('Emulation.setEmulatedMedia', { features: [] })
+    await cdp.detach()
 
     // The mouse rests after the click: the controls fade out, and come back on movement.
     await expect.poll(() => opacity(controls), { timeout: 6000 }).toBe('0')
@@ -296,8 +314,6 @@ test('indexes a library, browses it, filters by tag and shows details', async ()
     await page.keyboard.press('ArrowRight')
     await expect(page.getByRole('dialog', { name: names[photo + 1] })).toBeVisible()
     await expect.poll(async () => (await state()).tint).not.toBe(first.tint)
-    // The previous item stays underneath while the next one fades in.
-    expect((await state()).backdrop).toHaveLength(2)
     await page.keyboard.press('Escape')
     await expect(page.getByRole('dialog')).toBeHidden()
   })

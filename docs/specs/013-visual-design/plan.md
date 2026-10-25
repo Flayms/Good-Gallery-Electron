@@ -31,7 +31,7 @@ Four phases, each shippable on its own. Phase 0 is a spike whose results decide 
 
 ### Phase 3 · Viewer
 
-- **Backdrop:** the item's 400px thumbnail as a cover image with `filter: blur(60px) brightness(0.35) saturate(1.2)` (a filter on an image, not `backdrop-filter`), over Darkroom, fully opaque so the gallery doesn't show through. Crossfade on step. The gallery stays mounted behind it (REQ-009-01).
+- **Backdrop:** a `glass-scrim` layer over the whole window (`backdrop-filter` blur and a dark scrim), so the gallery, toolbar and sidebar stay visible behind the item. It is a sibling of the controls, not their ancestor, so their own glass still blurs what's behind the viewer. Replaced the first version, a blurred copy of the item (REQ-013-09, deprecated). The gallery stays mounted behind it (REQ-009-01).
 - **Ambient:** the placeholder's average color (`thumbHashToAverageRGBA`), converted to OKLCH and clamped to L ≤ 0.32, C ≤ 0.06, set as `--ambient` on the viewer. Its glass mixes it in with `color-mix(in oklch, …)`. Unit test for the clamp and for contrast with extreme colors.
 - **Controls:** a bottom pill (`glass-bar`) with file name, date, rating and the actions (_Show in Explorer_, _Info_, _Close_), round glass previous / next buttons, and the info panel as `glass-panel`. An idle hook hides them after 2.5s, unless hovered, the info panel is open or a video is paused.
 - **Transition:** tile and viewer image share a `view-transition-name` for the opened item, navigating with TanStack Router's `viewTransition`. Skipped (instant) under reduced motion, and a fade when the tile isn't mounted.
@@ -55,7 +55,7 @@ Four phases, each shippable on its own. Phase 0 is a spike whose results decide 
 - [x] _Filters_ and _View_ popovers, fits at 800 × 600, e2e locators and specs 006 / 007 updated (REQ-013-08)
 - [x] Sidebar and tile polish (no REQ, no behavior change)
 - [x] `formatDateTime` in the info panel and List view (REQ-013-13)
-- [x] Immersive viewer backdrop with crossfade (REQ-013-09)
+- [x] ~~Immersive viewer backdrop with crossfade (REQ-013-09)~~ replaced by the blurred window behind the viewer (REQ-013-14)
 - [x] Ambient tint with clamping (REQ-013-11, REQ-013-04)
 - [x] Viewer control bar with idle hiding (REQ-013-10)
 - [x] Tile ↔ viewer view transition with reduced-motion and fallback paths (REQ-013-12, REQ-013-07)

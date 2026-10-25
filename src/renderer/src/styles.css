@@ -67,6 +67,7 @@
   --glass-bar: rgb(28 28 28 / 0.72);
   --glass-panel: rgb(36 36 36 / 0.86);
   --field: rgb(0 0 0 / 0.35);
+  --scrim: rgb(0 0 0 / 0.5);
 
   /* Focus: a light ring with a dark ring outside it, visible over any photo. */
   --ring: var(--paper);
@@ -144,6 +145,19 @@
   }
   @supports not (backdrop-filter: blur(1px)) {
     background-color: var(--raised);
+  }
+}
+
+/* The whole window behind the viewer, blurred and darkened (REQ-013-14). */
+@utility glass-scrim {
+  background-color: var(--scrim);
+  backdrop-filter: blur(28px) saturate(1.2);
+  @media (prefers-reduced-transparency: reduce) {
+    background-color: var(--darkroom);
+    backdrop-filter: none;
+  }
+  @supports not (backdrop-filter: blur(1px)) {
+    background-color: var(--darkroom);
   }
 }
 

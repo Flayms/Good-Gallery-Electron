@@ -1,10 +1,10 @@
-import { mediaUrl, thumbUrl } from '@shared/media-urls'
+import { mediaUrl } from '@shared/media-urls'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { ChevronLeftIcon, ChevronRightIcon, FolderOpenIcon, InfoIcon, XIcon } from 'lucide-react'
 import { type CSSProperties, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { MediaContextMenu } from '@/components/media-context-menu'
-import { type MediaDetails, MediaInfo, Rating } from '@/components/media-info'
+import { MediaInfo, Rating } from '@/components/media-info'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { ZoomableImage } from '@/components/zoomable-image'
@@ -12,7 +12,6 @@ import { useIdle } from '@/hooks/use-idle'
 import { ambientGlassStyle } from '@/lib/ambient'
 import { formatDateTime } from '@/lib/format'
 import { controlsHidden } from '@/lib/idle'
-import { thumbhashDataUrl } from '@/lib/thumbhash'
 import { trpc } from '@/lib/trpc'
 import { cn } from '@/lib/utils'
 
@@ -27,42 +26,6 @@ export interface MediaNeighbour {
 
 function preload(item: MediaNeighbour | undefined) {
   if (item?.kind === 'image') new Image().src = mediaUrl(item.id)
-}
-
-interface BackdropLayer {
-  id: number
-  placeholder?: string
-}
-
-/**
- * The shown item itself, blurred and darkened, fills the window behind it (REQ-013-09). The previous item stays
- * underneath while the next one fades in.
- */
-function ViewerBackdrop({ item }: { item: MediaDetails | undefined }) {
-  const [layers, setLayers] = useState<BackdropLayer[]>([])
-  const id = item?.id
-  const thumbhash = item?.thumbhash
-  useEffect(() => {
-    if (id === undefined) return
-    const layer = { id, placeholder: thumbhash ? thumbhashDataUrl(thumbhash) : undefined }
-    setLayers((previous) => [...previous.filter((other) => other.id !== id).slice(-1), layer])
-  }, [id, thumbhash])
-
-  return (
-    <div className="absolute inset-0 overflow-hidden" aria-hidden>
-      {layers.map((layer) => (
-        <div
-          key={layer.id}
-          className="absolute -inset-24 animate-in bg-center bg-cover blur-[60px] brightness-35 saturate-120 fade-in duration-(--duration-base)"
-          style={{
-            backgroundImage: [`url("${thumbUrl(layer.id, 400)}")`, layer.placeholder && `url("${layer.placeholder}")`]
-              .filter(Boolean)
-              .join(', '),
-          }}
-        />
-      ))}
-    </div>
-  )
 }
 
 interface MediaViewerProps {
@@ -121,10 +84,12 @@ export function MediaViewer({ id, prev, next, onNavigate, onClose }: MediaViewer
       aria-modal="true"
       aria-label={item?.fileName ?? 'Media viewer'}
       data-viewer
-      className={cn('fixed inset-0 z-50 overflow-hidden bg-background text-foreground', hidden && 'cursor-none')}
+      className={cn('fixed inset-0 z-50 overflow-hidden text-foreground', hidden && 'cursor-none')}
       style={tint}
     >
-      <ViewerBackdrop item={item} />
+      {/* The window behind stays visible, blurred and darkened (REQ-013-14). A sibling of the controls, so their own
+          glass still blurs what is behind the viewer. */}
+      <div data-viewer-backdrop aria-hidden className="glass-scrim absolute inset-0" />
       {/* The viewer covers the title bar; this strip still moves the window. */}
       <div className="drag-region absolute inset-x-0 top-0 z-10 h-12" />
       <MediaContextMenu id={id} onInformation={() => setShowInfo(true)}>
