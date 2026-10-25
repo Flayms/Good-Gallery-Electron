@@ -38,7 +38,7 @@ describe('thumbPath', () => {
     expect(path).toMatch(/[\\/]([0-9a-f]{2})[\\/]([0-9a-f]{2})[\\/]\1\2[0-9a-f]{36}\.webp$/)
   })
 
-  it('changes with every part of the key', () => {
+  it('REQ-005-10: changes with every part of the key', () => {
     const variants = [
       thumbPath(dir, key, 400),
       thumbPath(dir, key, 800),
@@ -52,7 +52,7 @@ describe('thumbPath', () => {
 })
 
 describe('ThumbCache', () => {
-  it('measures existing thumbnails and drops leftover temp files', async () => {
+  it('REQ-005-13: measures existing thumbnails and drops leftover temp files', async () => {
     await seed('aaaa.webp', 60, new Date())
     await seed('bbbb.webp.123.tmp', 10, new Date())
 
@@ -66,7 +66,7 @@ describe('ThumbCache', () => {
     expect(roomy.hasRoom()).toBe(true)
   })
 
-  it('evicts least recently used thumbnails once over the cap', async () => {
+  it('REQ-005-11: evicts least recently used thumbnails once over the cap', async () => {
     await seed('aaaa.webp', 40, new Date(2020, 0, 1))
     await seed('bbbb.webp', 40, new Date(2021, 0, 1))
     const cache = new ThumbCache(dir, 100)
@@ -82,7 +82,7 @@ describe('ThumbCache', () => {
     expect(cache.hasRoom()).toBe(true)
   })
 
-  it('evicts down to a lowered cap', async () => {
+  it('REQ-005-11, REQ-010-05: evicts down to a lowered cap', async () => {
     await seed('aaaa.webp', 40, new Date(2020, 0, 1))
     await seed('bbbb.webp', 40, new Date(2021, 0, 1))
     const cache = new ThumbCache(dir, 100)
@@ -95,7 +95,7 @@ describe('ThumbCache', () => {
     expect(await cache.usage()).toBe(40)
   })
 
-  it('clears all thumbnails', async () => {
+  it('REQ-010-06: clears all thumbnails', async () => {
     await seed('aaaa.webp', 40, new Date())
     await seed('bbbb.webp', 40, new Date())
     const cache = new ThumbCache(dir, 100)

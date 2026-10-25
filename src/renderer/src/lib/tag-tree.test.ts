@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildTagTree } from './tag-tree'
 
-describe('buildTagTree', () => {
+describe('REQ-008-03: buildTagTree', () => {
   it('nests tags under their parent and keeps unparented tags at the top level', () => {
     const tree = buildTagTree([
       { id: 1, name: 'Anton', parentId: null, count: 3 },

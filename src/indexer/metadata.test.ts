@@ -7,13 +7,13 @@ import { describe, expect, it } from 'vitest'
 import { ExifToolMetadataSource, extractMetadata, extractTags } from './metadata'
 
 describe('extractTags', () => {
-  it('merges keyword fields case-insensitively and keeps the first spelling', () => {
+  it('REQ-004-06: merges keyword fields case-insensitively and keeps the first spelling', () => {
     const tags: Tags = { Keywords: ['Beach', ' sunset '], Subject: ['beach'], XPKeywords: 'Family;;SUNSET' }
 
     expect(extractTags([tags])).toEqual([['Beach'], ['sunset'], ['Family']])
   })
 
-  it('keeps hierarchies and drops flat keywords that are part of one', () => {
+  it('REQ-004-07: keeps hierarchies and drops flat keywords that are part of one', () => {
     const tags: Tags = {
       HierarchicalSubject: ['Places|Germany|Berlin', 'Places|Germany'],
       Keywords: ['Places', 'Germany', 'Berlin', 'Travel'],
@@ -22,11 +22,11 @@ describe('extractTags', () => {
     expect(extractTags([tags])).toEqual([['Places', 'Germany', 'Berlin'], ['Places', 'Germany'], ['Travel']])
   })
 
-  it('accepts numeric keywords', () => {
+  it('REQ-004-06: accepts numeric keywords', () => {
     expect(extractTags([{ Keywords: [2024, 'x'] as unknown as string[] }])).toEqual([['2024'], ['x']])
   })
 
-  it('adds face-region names as People tags, from any of the fields apps use', () => {
+  it('REQ-004-09: adds face-region names as People tags, from any of the fields apps use', () => {
     expect(extractTags([{ PersonInImage: 'Anton' }])).toEqual([['People', 'Anton']])
     expect(extractTags([{ RegionPersonDisplayName: ['Anton'] }])).toEqual([['People', 'Anton']])
     expect(extractTags([{ RegionName: ['Anton', 'My Dog'], RegionType: ['Face', 'Pet'] }])).toEqual([
@@ -34,7 +34,7 @@ describe('extractTags', () => {
     ])
   })
 
-  it('does not duplicate a face region already covered by a keyword hierarchy', () => {
+  it('REQ-004-09: does not duplicate a face region already covered by a keyword hierarchy', () => {
     const tags: Tags = { HierarchicalSubject: ['People|Anton'], PersonInImage: 'Anton', Keywords: ['Anton'] }
 
     expect(extractTags([tags])).toEqual([['People', 'Anton']])
@@ -42,7 +42,7 @@ describe('extractTags', () => {
 })
 
 describe('extractMetadata', () => {
-  it('swaps dimensions for rotated images', () => {
+  it('REQ-004-02: swaps dimensions for rotated images', () => {
     expect(extractMetadata({ ImageWidth: 4000, ImageHeight: 3000, Orientation: 6 })).toMatchObject({
       width: 3000,
       height: 4000,
@@ -53,7 +53,7 @@ describe('extractMetadata', () => {
     })
   })
 
-  it('prefers embedded capture dates and falls back to the sidecar', () => {
+  it('REQ-004-03: prefers embedded capture dates and falls back to the sidecar', () => {
     const date = (iso: string) => ExifDateTime.fromISO(iso)
     const embedded: Tags = { DateTimeOriginal: date('2020-01-02T03:04:05Z'), CreateDate: date('2021-01-01T00:00:00Z') }
     const sidecar: Tags = { DateTimeOriginal: date('2019-01-01T00:00:00Z') }
@@ -63,12 +63,12 @@ describe('extractMetadata', () => {
     expect(extractMetadata({ DateTimeOriginal: '0000:00:00 00:00:00' }).takenAt).toBeNull()
   })
 
-  it('reads video duration', () => {
+  it('REQ-004-04: reads video duration', () => {
     expect(extractMetadata({ Duration: 12.5 }).duration).toBe(12.5)
     expect(extractMetadata({ Duration: '0 s' }).duration).toBeNull()
   })
 
-  it('normalizes the rating, falling back to the sidecar', () => {
+  it('REQ-004-05: normalizes the rating, falling back to the sidecar', () => {
     expect(extractMetadata({ Rating: 5 }).rating).toBe(5)
     expect(extractMetadata({ Rating: 2.4 }).rating).toBe(2)
     expect(extractMetadata({ Rating: 0 }).rating).toBeNull()
@@ -106,7 +106,7 @@ describe('ExifToolMetadataSource', () => {
       <lr:hierarchicalSubject><rdf:Bag><rdf:li>People|Anna</rdf:li></rdf:Bag></lr:hierarchicalSubject>
     </rdf:Description></rdf:RDF></x:xmpmeta>`
 
-  it('reads dimensions from the file and tags from its sidecar', { timeout: 30_000 }, async () => {
+  it('REQ-004-10: reads dimensions from the file and tags from its sidecar', { timeout: 30_000 }, async () => {
     const dir = await mkdtemp(join(tmpdir(), 'gg-exif-'))
     const source = new ExifToolMetadataSource(1)
     try {

@@ -55,7 +55,7 @@ function thumbHandler(renderWrites = true) {
 }
 
 describe('gg-thumb handler', () => {
-  it('renders missing thumbnails on demand, then serves them from the cache', async () => {
+  it('REQ-005-07, REQ-005-14: renders missing thumbnails on demand, then serves them from the cache', async () => {
     const handle = thumbHandler()
 
     const first = await handle(new Request(thumbUrl(mediaId, 400)))
@@ -67,7 +67,7 @@ describe('gg-thumb handler', () => {
     expect(renders).toEqual([mediaId])
   })
 
-  it('rejects unknown ids and malformed URLs without rendering', async () => {
+  it('REQ-011-04: rejects unknown ids and malformed URLs without rendering', async () => {
     const handle = thumbHandler()
 
     expect((await handle(new Request(thumbUrl(mediaId + 1, 400)))).status).toBe(404)
@@ -75,7 +75,7 @@ describe('gg-thumb handler', () => {
     expect(renders).toEqual([])
   })
 
-  it('does not retry thumbnails that failed before', async () => {
+  it('REQ-005-09: does not retry thumbnails that failed before', async () => {
     db.update(media).set({ thumbStatus: 'error' }).run()
     const handle = thumbHandler()
 
@@ -83,13 +83,13 @@ describe('gg-thumb handler', () => {
     expect(renders).toEqual([])
   })
 
-  it('answers 404 when rendering fails', async () => {
+  it('REQ-005-09: answers 404 when rendering fails', async () => {
     expect((await thumbHandler(false)(new Request(thumbUrl(mediaId, 800)))).status).toBe(404)
   })
 })
 
 describe('gg-media handler', () => {
-  it('streams the whole file', async () => {
+  it('REQ-009-04: streams the whole file', async () => {
     const response = await createMediaHandler({ db })(new Request(mediaUrl(mediaId)))
 
     expect(response.status).toBe(200)
@@ -101,7 +101,7 @@ describe('gg-media handler', () => {
     expect(await response.text()).toBe('0123456789')
   })
 
-  it('serves byte ranges', async () => {
+  it('REQ-009-06: serves byte ranges', async () => {
     const handle = createMediaHandler({ db })
 
     const partial = await handle(new Request(mediaUrl(mediaId), { headers: { Range: 'bytes=2-4' } }))
@@ -114,7 +114,7 @@ describe('gg-media handler', () => {
     expect(beyond.headers.get('content-range')).toBe('bytes */10')
   })
 
-  it('answers 404 for unknown ids and vanished files', async () => {
+  it('REQ-009-12, REQ-011-04: answers 404 for unknown ids and vanished files', async () => {
     const handle = createMediaHandler({ db })
     expect((await handle(new Request(mediaUrl(mediaId + 1)))).status).toBe(404)
 
@@ -123,7 +123,7 @@ describe('gg-media handler', () => {
   })
 })
 
-describe('parseRange', () => {
+describe('REQ-009-06: parseRange', () => {
   it.each([
     ['bytes=0-', { start: 0, end: 99 }],
     ['bytes=10-19', { start: 10, end: 19 }],

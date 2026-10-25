@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildFolderTree, folderAncestors } from './folders'
 
 describe('buildFolderTree', () => {
-  it('adds intermediate folders, sums counts and sorts naturally', () => {
+  it('REQ-008-02: adds intermediate folders, sums counts and sorts naturally', () => {
     const tree = buildFolderTree([
       { path: '2024/10', count: 2 },
       { path: '2024/9/party', count: 3 },
@@ -21,7 +21,7 @@ describe('buildFolderTree', () => {
   })
 })
 
-describe('folderAncestors', () => {
+describe('REQ-008-02: folderAncestors', () => {
   it('lists the path and its ancestors', () => {
     expect(folderAncestors('a/b/c')).toEqual(['a', 'a/b', 'a/b/c'])
   })

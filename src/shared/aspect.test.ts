@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { tileAspect } from './aspect'
 
-describe('tileAspect', () => {
+describe('REQ-006-02: tileAspect', () => {
   it('is height / width', () => {
     expect(tileAspect(4000, 3000)).toBe(0.75)
   })

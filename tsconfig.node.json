@@ -15,6 +15,7 @@
     "src/main/**/*",
     "src/indexer/**/*",
     "src/preload/**/*",
-    "src/shared/**/*"
+    "src/shared/**/*",
+    "scripts/**/*"
   ]
 }

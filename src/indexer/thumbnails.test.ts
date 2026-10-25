@@ -68,7 +68,7 @@ async function cachedFiles() {
 }
 
 describe('ThumbnailService', () => {
-  it('renders pending media in the background, newest first', async () => {
+  it('REQ-005-08: renders pending media in the background, newest first', async () => {
     insertMedia('old.jpg', 1)
     insertMedia('new.jpg', 2)
     const service = new ThumbnailService(deps, 1)
@@ -84,7 +84,7 @@ describe('ThumbnailService', () => {
     expect(await cachedFiles()).toBe(4)
   })
 
-  it('runs the latest on-demand request first', async () => {
+  it('REQ-005-07: runs the latest on-demand request first', async () => {
     const ids = ['a.jpg', 'b.jpg', 'c.jpg', 'd.jpg'].map((name, i) => insertMedia(name, i))
     const service = new ThumbnailService(deps, 1)
     service.kick()
@@ -98,7 +98,7 @@ describe('ThumbnailService', () => {
     expect(rendered).toEqual(['d.jpg', 'b.jpg', 'a.jpg', 'c.jpg'])
   })
 
-  it('marks unrenderable media as failed, but only while the root is reachable', async () => {
+  it('REQ-005-09: marks unrenderable media as failed, but only while the root is reachable', async () => {
     const broken = insertMedia('broken.jpg', 1)
     deps.render = async () => {
       throw new Error('corrupt')
@@ -115,7 +115,7 @@ describe('ThumbnailService', () => {
     expect(db.select().from(libraryRoots).get()?.status).toBe('offline')
   })
 
-  it('stores only requested thumbnails once the cache is full', async () => {
+  it('REQ-005-12: stores only requested thumbnails once the cache is full', async () => {
     // Exactly the size of one rendered pair: full, but not over the cap.
     deps.cache = new ThumbCache(join(dir, 'cache'), 10)
     const requested = insertMedia('requested.jpg', 1)

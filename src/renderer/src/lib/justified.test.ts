@@ -4,7 +4,7 @@ import { justifiedRows, rowItemWidths, rowOfItem } from './justified'
 const aspects = (values: number[]) => (index: number) => values[index] ?? 1
 
 describe('justifiedRows', () => {
-  it('fills rows to the container width and keeps the last row at the target height', () => {
+  it('REQ-006-03: fills rows to the container width and keeps the last row at the target height', () => {
     // Landscape 4:3 at 150px is 200px wide: four fit into 840px with gaps, the fifth overflows the row.
     const aspectAt = aspects([0.75, 0.75, 0.75, 0.75, 0.75, 0.75])
     const rows = justifiedRows(6, aspectAt, 840, 150, 10)
@@ -19,7 +19,7 @@ describe('justifiedRows', () => {
     }
   })
 
-  it('gives an over-wide panorama a row of its own', () => {
+  it('REQ-006-03: gives an over-wide panorama a row of its own', () => {
     const rows = justifiedRows(2, aspects([0.3, 1]), 400, 200, 8)
 
     expect(rows[0]).toEqual({ start: 0, end: 1, height: 120, full: true })

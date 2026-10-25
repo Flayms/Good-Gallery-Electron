@@ -51,14 +51,14 @@ function connect() {
 }
 
 describe('tRPC over IPC', () => {
-  it('round-trips superjson types', async () => {
+  it('REQ-011-07: round-trips superjson types', async () => {
     const { trpc } = connect()
     const at = new Date('2026-01-02T03:04:05Z')
 
     expect(await trpc.echo.query({ at })).toEqual({ at, tags: new Set(['a']) })
   })
 
-  it('surfaces errors as TRPCClientError with their code', async () => {
+  it('REQ-011-07: surfaces errors as TRPCClientError with their code', async () => {
     const { trpc } = connect()
 
     const error = await trpc.fail.mutate().catch((e: unknown) => e)
@@ -66,7 +66,7 @@ describe('tRPC over IPC', () => {
     expect(isTRPCClientError(error) && error.data?.code).toBe('NOT_FOUND')
   })
 
-  it('reports validation errors', async () => {
+  it('REQ-011-03: reports validation errors', async () => {
     const { trpc } = connect()
 
     const error = await trpc.echo.query({ at: 'x' as unknown as Date }).catch((e: unknown) => e)
@@ -74,7 +74,7 @@ describe('tRPC over IPC', () => {
     expect(isTRPCClientError(error) && error.data?.code).toBe('BAD_REQUEST')
   })
 
-  it('streams subscription events and aborts the server side on unsubscribe', async () => {
+  it('REQ-011-07: streams subscription events and aborts the server side on unsubscribe', async () => {
     const { trpc, events } = connect()
     const received: number[] = []
 

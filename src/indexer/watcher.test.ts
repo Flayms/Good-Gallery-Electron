@@ -33,7 +33,7 @@ afterEach(() => {
 })
 
 describe('changedPath', () => {
-  it('normalizes separators and skips housekeeping paths', () => {
+  it('REQ-003-03: normalizes separators and skips housekeeping paths', () => {
     expect(changedPath('trip\\day 1\\IMG_1.jpg')).toBe('trip/day 1/IMG_1.jpg')
     expect(changedPath('trip')).toBe('trip')
     expect(changedPath('@eaDir\\IMG_1.jpg\\SYNOFILE_THUMB_M.jpg')).toBeUndefined()
@@ -43,7 +43,7 @@ describe('changedPath', () => {
 })
 
 describe('RootWatcher', () => {
-  it('reports the changed paths once changes settle', () => {
+  it('REQ-003-02: reports the changed paths once changes settle', () => {
     const { handle, onChange } = setup()
 
     handle.change('a\\1.jpg')
@@ -58,7 +58,7 @@ describe('RootWatcher', () => {
     expect(onChange).toHaveBeenCalledExactlyOnceWith(['a/1.jpg', 'b'])
   })
 
-  it('reports within the maximum delay while changes keep coming', () => {
+  it('REQ-003-02: reports within the maximum delay while changes keep coming', () => {
     const { handle, onChange } = setup()
 
     for (let elapsed = 0; elapsed < 1000; elapsed += 50) {
@@ -70,7 +70,7 @@ describe('RootWatcher', () => {
     expect(onChange.mock.calls[0]?.[0]).toHaveLength(20)
   })
 
-  it('reports unknown changes when events were lost', () => {
+  it('REQ-003-05: reports unknown changes when events were lost', () => {
     const { handle, onChange } = setup()
 
     handle.change('a\\1.jpg')
@@ -80,7 +80,7 @@ describe('RootWatcher', () => {
     expect(onChange).toHaveBeenCalledExactlyOnceWith(undefined)
   })
 
-  it('closes itself on errors', () => {
+  it('REQ-003-06: closes itself on errors', () => {
     const { handle, onChange, onError } = setup()
     const error = new Error('share disconnected')
 

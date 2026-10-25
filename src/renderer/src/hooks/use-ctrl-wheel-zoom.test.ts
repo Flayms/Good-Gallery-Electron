@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { accumulateWheel, WHEEL_STEP } from './use-ctrl-wheel-zoom'
 
-describe('accumulateWheel', () => {
+describe('REQ-006-06: accumulateWheel', () => {
   it('turns a wheel notch into one step', () => {
     expect(accumulateWheel(0, WHEEL_STEP)).toEqual({ steps: 1, rest: 0 })
     expect(accumulateWheel(0, -WHEEL_STEP)).toEqual({ steps: -1, rest: 0 })

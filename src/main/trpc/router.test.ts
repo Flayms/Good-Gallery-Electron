@@ -59,7 +59,7 @@ async function expectTrpcError(promise: Promise<unknown>, code: TRPCError['code'
 }
 
 describe('libraries', () => {
-  it('adds a reachable folder and queues a scan', async () => {
+  it('REQ-001-01: adds a reachable folder and queues a scan', async () => {
     const root = await caller.libraries.add({ path: tempDir })
 
     expect(root).toMatchObject({ path: resolve(tempDir), status: 'online' })
@@ -67,17 +67,17 @@ describe('libraries', () => {
     expect(indexer.status.current?.rootId).toBe(root.id)
   })
 
-  it('rejects duplicates case-insensitively', async () => {
+  it('REQ-001-04: rejects duplicates case-insensitively', async () => {
     await caller.libraries.add({ path: tempDir })
     await expectTrpcError(caller.libraries.add({ path: tempDir.toUpperCase() }), 'CONFLICT')
   })
 
-  it('rejects relative and missing paths', async () => {
+  it('REQ-001-03: rejects relative and missing paths', async () => {
     await expectTrpcError(caller.libraries.add({ path: 'photos' }), 'BAD_REQUEST')
     await expectTrpcError(caller.libraries.add({ path: join(tempDir, 'missing') }), 'BAD_REQUEST')
   })
 
-  it('removes a root with its media', async () => {
+  it('REQ-001-05: removes a root with its media', async () => {
     const root = await caller.libraries.add({ path: tempDir })
     insertMedia(root.id, 'a.jpg')
 
@@ -92,7 +92,7 @@ describe('media.layout', () => {
   const layoutIds = async (input: Parameters<typeof caller.media.layout>[0] = {}) =>
     (await caller.media.layout(input)).ids
 
-  it('orders by date taken, newest first, with the id as tie-breaker', async () => {
+  it('REQ-007-12: orders by date taken, newest first, with the id as tie-breaker', async () => {
     const root = insertRoot()
     // Same date on two items exercises the id tie-breaker.
     const dates = [5, 3, 3, 9, 1]
@@ -102,7 +102,7 @@ describe('media.layout', () => {
     expect(await layoutIds({ dir: 'asc' })).toEqual([ids[4], ids[1], ids[2], ids[0], ids[3]])
   })
 
-  it('falls back to mtime and filters by kind and root', async () => {
+  it('REQ-007-07, REQ-007-10: falls back to mtime and filters by kind and root', async () => {
     const root = insertRoot()
     const other = insertRoot('D:Other')
     const video = insertMedia(root.id, 'b.mp4', { kind: 'video', mtime: 10 })
@@ -119,7 +119,7 @@ describe('media.layout', () => {
     ['size', 'desc', ['B.jpg', 'c.jpg', 'a.jpg']],
     ['path', 'asc', ['B.jpg', 'a.jpg', 'c.jpg']],
     ['taken', 'asc', ['a.jpg', 'c.jpg', 'B.jpg']],
-  ] as const)('sorts by %s %s', async (sortBy, dir, expected) => {
+  ] as const)('REQ-007-12: sorts by %s %s', async (sortBy, dir, expected) => {
     const root = insertRoot()
     insertMedia(root.id, 'a.jpg', { size: 1, mtime: 2, takenAt: 1, relPath: 'z/a.jpg' })
     insertMedia(root.id, 'B.jpg', { size: 3, mtime: 3, takenAt: 3, relPath: 'a/B.jpg' })
@@ -131,7 +131,7 @@ describe('media.layout', () => {
     expect(ids.map((id) => items.find((item) => item.id === id)?.fileName)).toEqual(expected)
   })
 
-  it('returns clamped aspects, a square when the size is unknown', async () => {
+  it('REQ-006-02: returns clamped aspects, a square when the size is unknown', async () => {
     const root = insertRoot()
     insertMedia(root.id, 'a.jpg', { width: 4000, height: 3000, mtime: 3 })
     insertMedia(root.id, 'b.jpg', { mtime: 2 })
@@ -140,7 +140,7 @@ describe('media.layout', () => {
     expect((await caller.media.layout({})).aspects).toEqual([750, 1000, 3000])
   })
 
-  it('filters by folder including subfolders', async () => {
+  it('REQ-007-10: filters by folder including subfolders', async () => {
     const root = insertRoot()
     const ids = ['a/1.jpg', 'a/b/2.jpg', 'ab/3.jpg', '4.jpg'].map(
       (relPath, i) => insertMedia(root.id, `${i}.jpg`, { relPath, mtime: -i }).id,
@@ -151,7 +151,7 @@ describe('media.layout', () => {
     await expectTrpcError(caller.media.layout({ folder: 'a' }), 'BAD_REQUEST')
   })
 
-  it('filters by date range', async () => {
+  it('REQ-007-08: filters by date range', async () => {
     const root = insertRoot()
     const ids = [10, 20, 30].map((takenAt) => insertMedia(root.id, `${takenAt}.jpg`, { takenAt }).id)
 
@@ -160,7 +160,7 @@ describe('media.layout', () => {
 })
 
 describe('media.byIds', () => {
-  it('returns the tile data of the requested items only', async () => {
+  it('REQ-006-08: returns the tile data of the requested items only', async () => {
     const root = insertRoot()
     const a = insertMedia(root.id, 'a.jpg')
     insertMedia(root.id, 'b.jpg')
@@ -201,7 +201,7 @@ describe('media.layout tags', () => {
   const search = async (include: string[], exclude: string[] = []) =>
     (await caller.media.layout({ tags: include, excludeTags: exclude })).ids
 
-  it('requires all included tags, matching descendants', async () => {
+  it('REQ-007-01: requires all included tags, matching descendants', async () => {
     const ids = setup()
 
     expect(await search(['places'])).toEqual([ids.parisCat, ids.franceDog])
@@ -209,14 +209,14 @@ describe('media.layout tags', () => {
     expect(await search(['paris', 'dog'])).toEqual([])
   })
 
-  it('excludes tags with their descendants', async () => {
+  it('REQ-007-02: excludes tags with their descendants', async () => {
     const ids = setup()
 
     expect(await search([], ['france'])).toEqual([ids.cat, ids.untagged])
     expect(await search(['cat'], ['paris'])).toEqual([ids.cat])
   })
 
-  it('matches nothing for unknown included tags and ignores unknown exclusions', async () => {
+  it('REQ-007-03: matches nothing for unknown included tags and ignores unknown exclusions', async () => {
     const ids = setup()
 
     expect(await search(['cat', 'unknown'])).toEqual([])
@@ -225,7 +225,7 @@ describe('media.layout tags', () => {
 })
 
 describe('media.byId', () => {
-  it('returns a single item or NOT_FOUND', async () => {
+  it('REQ-009-12: returns a single item or NOT_FOUND', async () => {
     const root = insertRoot()
     const item = insertMedia(root.id, 'a.jpg', { width: 3, height: 2 })
 
@@ -233,7 +233,7 @@ describe('media.byId', () => {
     await expectTrpcError(caller.media.byId({ id: item.id + 1 }), 'NOT_FOUND')
   })
 
-  it('includes the file path, library and tags', async () => {
+  it('REQ-009-08: includes the file path, library and tags', async () => {
     const root = insertRoot()
     const item = insertMedia(root.id, 'b.jpg', { relPath: 'trip/b.jpg' })
     const tagIds = ['Zoo', 'Cat'].map(
@@ -253,7 +253,7 @@ describe('media.byId', () => {
     })
   })
 
-  it('includes the rating and groups tags by category', async () => {
+  it('REQ-009-08: includes the rating and groups tags by category', async () => {
     const root = insertRoot()
     const item = insertMedia(root.id, 'c.jpg', { rating: 4 })
     const people = db.insert(tags).values({ name: 'People', nameNorm: 'people' }).returning().get()
@@ -277,7 +277,7 @@ describe('media.byId', () => {
 })
 
 describe('media.showInFolder', () => {
-  it('reveals the file resolved from the index', async () => {
+  it('REQ-009-10, REQ-011-04: reveals the file resolved from the index', async () => {
     const root = insertRoot()
     const item = insertMedia(root.id, 'b.jpg', { relPath: 'trip/b.jpg' })
 
@@ -289,7 +289,7 @@ describe('media.showInFolder', () => {
 })
 
 describe('libraries.pickFolder', () => {
-  it('returns the chosen folder or null when cancelled', async () => {
+  it('REQ-001-02: returns the chosen folder or null when cancelled', async () => {
     expect(await caller.libraries.pickFolder()).toBeNull()
     pickedFolder = 'D:\\Pictures'
     expect(await caller.libraries.pickFolder()).toBe('D:\\Pictures')
@@ -297,7 +297,7 @@ describe('libraries.pickFolder', () => {
 })
 
 describe('settings', () => {
-  it('starts with defaults and persists updates', async () => {
+  it('REQ-010-01: starts with defaults and persists updates', async () => {
     expect(await caller.settings.get()).toEqual(DEFAULT_SETTINGS)
 
     const updated = await caller.settings.update({ ioConcurrency: 8 })
@@ -306,12 +306,12 @@ describe('settings', () => {
     expect(new SettingsStore(db).get()).toEqual(updated)
   })
 
-  it('rejects out-of-range values', async () => {
+  it('REQ-010-02: rejects out-of-range values', async () => {
     await expectTrpcError(caller.settings.update({ ioConcurrency: 0 }), 'BAD_REQUEST')
     await expectTrpcError(caller.settings.update({ thumbCacheGiB: -1 }), 'BAD_REQUEST')
   })
 
-  it('falls back to defaults for stored values that no longer validate', () => {
+  it('REQ-010-02: falls back to defaults for stored values that no longer validate', () => {
     db.insert(settingsTable).values({ key: 'ioConcurrency', value: 'many' }).run()
 
     expect(new SettingsStore(db).get()).toEqual(DEFAULT_SETTINGS)
@@ -319,7 +319,7 @@ describe('settings', () => {
 })
 
 describe('tags.autocomplete', () => {
-  it('matches normalized prefixes ordered by usage', async () => {
+  it('REQ-007-04: matches normalized prefixes ordered by usage', async () => {
     const root = insertRoot()
     const insertTag = (name: string) => db.insert(tags).values({ name, nameNorm: name.toLowerCase() }).returning().get()
     const berlin = insertTag('Berlin')
@@ -341,7 +341,7 @@ describe('tags.autocomplete', () => {
     expect(await caller.tags.autocomplete({ limit: 1 })).toEqual([{ id: bern.id, name: 'Bern', count: 3 }])
   })
 
-  it('counts descendants and follows deletions', async () => {
+  it('REQ-002-14, REQ-007-04: counts descendants and follows deletions', async () => {
     const root = insertRoot()
     const places = db.insert(tags).values({ name: 'Places', nameNorm: 'places' }).returning().get()
     const paris = db.insert(tags).values({ name: 'Paris', nameNorm: 'paris', parentId: places.id }).returning().get()
@@ -366,7 +366,7 @@ describe('tags.autocomplete', () => {
 })
 
 describe('media.layout ratings', () => {
-  it('filters by exact rating, 0 meaning unrated', async () => {
+  it('REQ-007-09: filters by exact rating, 0 meaning unrated', async () => {
     const root = insertRoot()
     const fiveStar = insertMedia(root.id, 'a.jpg', { rating: 5 }).id
     const threeStar = insertMedia(root.id, 'b.jpg', { rating: 3 }).id
@@ -380,7 +380,7 @@ describe('media.layout ratings', () => {
 })
 
 describe('media.layout name', () => {
-  it('matches a case-insensitive substring of the file name, combined with other filters', async () => {
+  it('REQ-007-06, REQ-007-11: matches a case-insensitive substring of the file name, combined with other filters', async () => {
     const root = insertRoot()
     const beach = insertMedia(root.id, 'IMG_Beach_01.jpg', { rating: 5 }).id
     const beachVideo = insertMedia(root.id, 'beach.mp4', { kind: 'video' }).id
@@ -395,7 +395,7 @@ describe('media.layout name', () => {
 })
 
 describe('media.ratingCounts', () => {
-  it('counts media per rating, 0 meaning unrated', async () => {
+  it('REQ-008-04: counts media per rating, 0 meaning unrated', async () => {
     const root = insertRoot()
     insertMedia(root.id, 'a.jpg', { rating: 5 })
     insertMedia(root.id, 'b.jpg', { rating: 5 })
@@ -411,7 +411,7 @@ describe('media.ratingCounts', () => {
 })
 
 describe('tags.category', () => {
-  it('groups by the top-level tag regardless of its exact name, with counts including descendants', async () => {
+  it('REQ-008-03: groups by the top-level tag regardless of its exact name, with counts including descendants', async () => {
     const root = insertRoot()
     const insertTag = (name: string, parentId: number | null = null) =>
       db.insert(tags).values({ name, nameNorm: name.toLowerCase(), parentId }).returning().get()
@@ -438,7 +438,7 @@ describe('tags.category', () => {
 })
 
 describe('tags.popular', () => {
-  it('excludes category tags and their roots', async () => {
+  it('REQ-008-05: excludes category tags and their roots', async () => {
     const root = insertRoot()
     const insertTag = (name: string, parentId: number | null = null) =>
       db.insert(tags).values({ name, nameNorm: name.toLowerCase(), parentId }).returning().get()
@@ -458,7 +458,7 @@ describe('tags.popular', () => {
 })
 
 describe('libraries.folders', () => {
-  it('lists folders with direct media counts', async () => {
+  it('REQ-008-02: lists folders with direct media counts', async () => {
     const root = insertRoot()
     for (const relPath of ['top.jpg', 'a/1.jpg', 'a/2.jpg', 'a/b/3.jpg']) insertMedia(root.id, relPath, { relPath })
 

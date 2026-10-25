@@ -17,12 +17,14 @@ Specs 001–011 were written retrospectively (2026-10-25) for features built bef
 | [009-media-viewer](009-media-viewer/spec.md)             | Viewer, zoom and pan, info panel, context menu                   | Implemented |
 | [010-settings](010-settings/spec.md)                     | Indexing and thumbnail cache settings                            | Implemented |
 | [011-security](011-security/spec.md)                     | Renderer isolation, API and file access boundaries               | Implemented |
+| [012-spec-consistency](012-spec-consistency/spec.md)     | Check that specs and tests reference each other                  | Implemented |
 
 ## Conventions
 
 - **Status:** `Draft` → `Approved` (plan accepted, Tier 3) → `Implemented`. `Deprecated` for removed features.
 - **REQ IDs:** `REQ-NNN-XX`. Never reused or renumbered. Deprecate with `~~strikethrough~~` and a reason instead of deleting.
 - **Verification results:** `pass` (a test covers the REQ and passes), `partial` (tests cover only the named part), `no test` (only manual or by inspection). Close `partial` and `no test` gaps when the REQ is next touched.
+- **Tests reference REQs** at the start of their title: `it('REQ-007-01, REQ-007-02: …')`, in e2e via `test.step('REQ-…: …')`. `pnpm check:specs` fails on broken or stale references in either direction and warns about `no test` REQs. `pnpm check:specs --summary` prints the counts per spec.
 
 ## Template
 

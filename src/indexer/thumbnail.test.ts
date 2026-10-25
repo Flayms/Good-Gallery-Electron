@@ -44,18 +44,21 @@ describe('orient', () => {
   const pixels = Buffer.from([...Array(6).keys()].flatMap((i) => [i * 40, 0, 0]))
   const raw = { width: 2, height: 3, channels: 3 } as const
 
-  it.each([1, 2, 3, 4, 5, 6, 7, 8])('matches sharp auto-orientation for orientation %i', async (orientation) => {
-    const tagged = await sharp(pixels, { raw }).png().withMetadata({ orientation }).toBuffer()
-    const expected = await sharp(tagged).autoOrient().raw().toBuffer({ resolveWithObject: true })
-    const actual = await orient(sharp(pixels, { raw }), orientation).raw().toBuffer({ resolveWithObject: true })
+  it.each([1, 2, 3, 4, 5, 6, 7, 8])(
+    'REQ-005-03: matches sharp auto-orientation for orientation %i',
+    async (orientation) => {
+      const tagged = await sharp(pixels, { raw }).png().withMetadata({ orientation }).toBuffer()
+      const expected = await sharp(tagged).autoOrient().raw().toBuffer({ resolveWithObject: true })
+      const actual = await orient(sharp(pixels, { raw }), orientation).raw().toBuffer({ resolveWithObject: true })
 
-    expect([actual.info.width, actual.info.height]).toEqual([expected.info.width, expected.info.height])
-    expect([...actual.data]).toEqual([...expected.data])
-  })
+      expect([actual.info.width, actual.info.height]).toEqual([expected.info.width, expected.info.height])
+      expect([...actual.data]).toEqual([...expected.data])
+    },
+  )
 })
 
 describe('renderMedia', () => {
-  it('renders every width as WebP without upscaling, plus a ThumbHash', async () => {
+  it('REQ-005-01: renders every width as WebP without upscaling, plus a ThumbHash', async () => {
     const file = join(dir, 'wide.png')
     await solid(1000, 500, '#ff0000').png().toFile(file)
 
@@ -76,7 +79,7 @@ describe('renderMedia', () => {
     ])
   })
 
-  it('uses a large enough embedded JPEG preview with the original orientation', async () => {
+  it('REQ-005-04: uses a large enough embedded JPEG preview with the original orientation', async () => {
     const file = join(dir, 'camera.jpg')
     await solid(1600, 1200, '#ff0000').jpeg().withMetadata({ orientation: 6 }).toFile(file)
     const preview = await solid(1200, 900, '#0000ff').jpeg().toBuffer()
@@ -91,7 +94,7 @@ describe('renderMedia', () => {
     expect(averageColor(thumbnails)).toEqual([0, 0, 1])
   })
 
-  it('falls back to the full image when the preview is too small', async () => {
+  it('REQ-005-04: falls back to the full image when the preview is too small', async () => {
     const file = join(dir, 'tiny-preview.jpg')
     await solid(1600, 1200, '#ff0000').jpeg().toFile(file)
     const preview = await solid(160, 120, '#0000ff').jpeg().toBuffer()
@@ -105,7 +108,7 @@ describe('renderMedia', () => {
     expect(averageColor(thumbnails)).toEqual([1, 0, 0])
   })
 
-  it('falls back to the full image when the preview is not an image', async () => {
+  it('REQ-005-04: falls back to the full image when the preview is not an image', async () => {
     const file = join(dir, 'broken-preview.jpg')
     await solid(1600, 1200, '#ff0000').jpeg().toFile(file)
 
@@ -118,7 +121,7 @@ describe('renderMedia', () => {
     expect(averageColor(thumbnails)).toEqual([1, 0, 0])
   })
 
-  it('extracts a video frame with ffmpeg', async () => {
+  it('REQ-005-05: extracts a video frame with ffmpeg', async () => {
     if (!ffmpegPath) throw new Error('ffmpeg-static has no binary for this platform')
     const file = join(dir, 'clip.mp4')
     const source = ['-f', 'lavfi', '-i', 'color=c=blue:s=320x240:d=1', '-pix_fmt', 'yuv420p']

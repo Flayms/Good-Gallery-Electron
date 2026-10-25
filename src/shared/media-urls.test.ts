@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mediaUrl, parseMediaUrl, parseThumbUrl, pickThumbWidth, thumbUrl } from './media-urls'
 
-describe('media URLs', () => {
+describe('REQ-011-04: media URLs', () => {
   it('round-trips ids and widths', () => {
     expect(parseThumbUrl(thumbUrl(42, 800))).toEqual({ id: 42, width: 800 })
     expect(parseMediaUrl(mediaUrl(7))).toEqual({ id: 7 })
@@ -28,7 +28,7 @@ describe('media URLs', () => {
     },
   )
 
-  it('picks the smallest thumbnail covering the physical width', () => {
+  it('REQ-005-02: picks the smallest thumbnail covering the physical width', () => {
     expect(pickThumbWidth(300, 1)).toBe(400)
     expect(pickThumbWidth(300, 1.5)).toBe(800)
     expect(pickThumbWidth(900, 2)).toBe(800)

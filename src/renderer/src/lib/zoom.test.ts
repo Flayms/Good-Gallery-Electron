@@ -4,7 +4,7 @@ import { clampView, FIT, MAX_SCALE, zoomTo } from './zoom'
 const viewport = { width: 1000, height: 800 }
 const content = { width: 1000, height: 500 }
 
-describe('zoomTo', () => {
+describe('REQ-009-05: zoomTo', () => {
   it('keeps the point under the cursor in place', () => {
     const point = { x: 200, y: 100 }
     const view = zoomTo(FIT, 2, point, content, viewport)
@@ -19,7 +19,7 @@ describe('zoomTo', () => {
   })
 })
 
-describe('clampView', () => {
+describe('REQ-009-05: clampView', () => {
   it('keeps zoomed content covering the viewport', () => {
     // At 2x the content is 2000×1000: 500 px of horizontal and 100 px of vertical slack on each side.
     expect(clampView({ scale: 2, x: 900, y: -900 }, content, viewport)).toEqual({ scale: 2, x: 500, y: -100 })

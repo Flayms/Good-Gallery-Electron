@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { formatBytes, formatDuration } from './format'
 
-describe('formatDuration', () => {
+describe('REQ-006-09: formatDuration', () => {
   it.each([
     [0, '0:00'],
     [9.6, '0:10'],
@@ -13,7 +13,7 @@ describe('formatDuration', () => {
   })
 })
 
-describe('formatBytes', () => {
+describe('REQ-006-05: formatBytes', () => {
   it.each([
     [0, '0 B'],
     [1023, '1023 B'],

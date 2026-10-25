@@ -42,7 +42,7 @@ function setup() {
 }
 
 describe('IndexerController', () => {
-  it('runs scans one at a time in request order', () => {
+  it('REQ-002-07: runs scans one at a time in request order', () => {
     const { controller, workers } = setup()
 
     controller.requestScan(1, QUICK)
@@ -69,7 +69,7 @@ describe('IndexerController', () => {
     ])
   })
 
-  it('merges scans of a queued root into the one covering most', () => {
+  it('REQ-002-07: merges scans of a queued root into the one covering most', () => {
     const { controller, workers } = setup()
     controller.requestScan(1, QUICK)
     controller.requestScan(2, { mode: 'changes', paths: ['a'] })
@@ -87,7 +87,7 @@ describe('IndexerController', () => {
     ])
   })
 
-  it('queues reported changes even while their root is scanned', () => {
+  it('REQ-003-07: queues reported changes even while their root is scanned', () => {
     const { controller, workers } = setup()
     controller.requestScan(1, QUICK)
 
@@ -104,7 +104,7 @@ describe('IndexerController', () => {
     })
   })
 
-  it('removes roots from the queue and the worker', () => {
+  it('REQ-001-05: removes roots from the queue and the worker', () => {
     const { controller, workers } = setup()
     controller.requestScan(1, QUICK)
     controller.requestScan(2, QUICK)
@@ -119,7 +119,7 @@ describe('IndexerController', () => {
     ])
   })
 
-  it('continues with a new worker after a crash', () => {
+  it('REQ-002-13: continues with a new worker after a crash', () => {
     const { controller, workers } = setup()
     controller.requestScan(1, QUICK)
     controller.requestScan(2, QUICK)
@@ -142,7 +142,7 @@ describe('IndexerController', () => {
     expect(workers).toHaveLength(1)
   })
 
-  it('deduplicates thumbnail requests and resolves them from worker events', async () => {
+  it('REQ-005-07: deduplicates thumbnail requests and resolves them from worker events', async () => {
     const { controller, workers } = setup()
 
     const first = controller.requestThumbnail(7)
@@ -162,7 +162,7 @@ describe('IndexerController', () => {
     expect(await pending).toBe(false)
   })
 
-  it('forwards settings only to a running worker', () => {
+  it('REQ-010-04, REQ-010-05: forwards settings only to a running worker', () => {
     const { controller, workers } = setup()
     controller.configure({ thumbCacheBytes: 100, concurrency: 2 })
     expect(workers).toHaveLength(0)
@@ -173,7 +173,7 @@ describe('IndexerController', () => {
     expect(workers[0]?.sent.at(-1)).toEqual({ type: 'configure', thumbCacheBytes: 100, concurrency: 2 })
   })
 
-  it('answers cache requests by id and fails them when the worker exits', async () => {
+  it('REQ-010-06: answers cache requests by id and fails them when the worker exits', async () => {
     const { controller, workers } = setup()
     const usage = controller.thumbnailCache('usage')
     const clear = controller.thumbnailCache('clear')
@@ -191,7 +191,7 @@ describe('IndexerController', () => {
 })
 
 describe('mergeScopes', () => {
-  it('turns too many changed paths into a quick scan', () => {
+  it('REQ-003-05: turns too many changed paths into a quick scan', () => {
     const paths = Array.from({ length: 3000 }, (_, i) => `${i}.jpg`)
     const more = Array.from({ length: 3000 }, (_, i) => `more/${i}.jpg`)
 

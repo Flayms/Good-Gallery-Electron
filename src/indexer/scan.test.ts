@@ -99,7 +99,7 @@ function tagsOf(mediaId: number) {
 }
 
 describe('scanRoot', () => {
-  it('indexes media recursively and skips housekeeping files', async () => {
+  it('REQ-002-01, REQ-002-02, REQ-002-03: indexes media recursively and skips housekeeping files', async () => {
     await touch('a.jpg')
     await touch('trip/b.MP4')
     await touch('trip/notes.txt')
@@ -120,7 +120,7 @@ describe('scanRoot', () => {
     expect(db.select().from(libraryRoots).get()).toMatchObject({ status: 'online', lastScanAt: expect.any(Number) })
   })
 
-  it('stores tag hierarchies and links media to the leaf tag', async () => {
+  it('REQ-004-07, REQ-004-08: stores tag hierarchies and links media to the leaf tag', async () => {
     await touch('a.jpg')
     await touch('b.jpg')
     metadata.byName.set('a.jpg', { tags: [['Places', 'Berlin'], ['Travel']] })
@@ -144,7 +144,7 @@ describe('scanRoot', () => {
     expect(parents).toEqual({ Places: null, Berlin: placesId, Travel: null })
   })
 
-  it('rescans incrementally', async () => {
+  it('REQ-002-04, REQ-002-14, REQ-004-10, REQ-005-10: rescans incrementally', async () => {
     const past = new Date(2020, 0, 1)
     await touch('same.jpg', 'x', past)
     await touch('changed.jpg', 'x', past)
@@ -172,7 +172,7 @@ describe('scanRoot', () => {
     expect(db.select().from(tags).all()).toEqual([])
   })
 
-  it('re-reads files from an older metadata extractor, even if otherwise unchanged', async () => {
+  it('REQ-002-05: re-reads files from an older metadata extractor, even if otherwise unchanged', async () => {
     await touch('a.jpg')
     await scan()
     db.update(media).set({ metaVersion: 0 }).run()
@@ -184,7 +184,7 @@ describe('scanRoot', () => {
     expect(indexed()).toMatchObject([{ relPath: 'a.jpg', metaVersion: METADATA_VERSION }])
   })
 
-  it('keeps the index of unreachable roots', async () => {
+  it('REQ-002-09: keeps the index of unreachable roots', async () => {
     await touch('a.jpg')
     await scan()
     deps.isReachable = async () => false
@@ -194,7 +194,7 @@ describe('scanRoot', () => {
     expect(db.select().from(libraryRoots).get()?.status).toBe('offline')
   })
 
-  it('writes read files while the scan still runs', async () => {
+  it('REQ-002-06, REQ-006-11: writes read files while the scan still runs', async () => {
     await touch('a.jpg')
     await touch('b.jpg')
     const release = Promise.withResolvers<void>()
@@ -210,7 +210,7 @@ describe('scanRoot', () => {
     expect(indexedPaths()).toEqual(['a.jpg', 'b.jpg'])
   })
 
-  it('quick scans only re-list folders whose entries changed', async () => {
+  it('REQ-003-08: quick scans only re-list folders whose entries changed', async () => {
     await touch('keep/a.jpg', 'x', PAST)
     await touch('changed/b.jpg', 'x', PAST)
     await touch('old/c.jpg', 'x', PAST)
@@ -239,7 +239,7 @@ describe('scanRoot', () => {
     expect(metadata.reads).toEqual(['a.jpg'])
   })
 
-  it('falls back to a full scan without stored folders', async () => {
+  it('REQ-003-08: falls back to a full scan without stored folders', async () => {
     await touch('a/b.jpg')
 
     expect(await scan({}, { mode: 'quick' })).toBe('completed')
@@ -247,7 +247,7 @@ describe('scanRoot', () => {
     expect(storedFolders()).toEqual(['', 'a'])
   })
 
-  it('checks only reported files of changed folders', async () => {
+  it('REQ-003-04: checks only reported files of changed folders', async () => {
     await touch('a/x.jpg', 'x', PAST)
     await touch('a/y.jpg', 'x', PAST)
     await touch('a/unreported.jpg', 'x', PAST)
@@ -269,7 +269,7 @@ describe('scanRoot', () => {
     expect(storedFolders()).toEqual(['', 'a', 'c'])
   })
 
-  it('writes nothing when cancelled', async () => {
+  it('REQ-001-05: writes nothing when cancelled', async () => {
     await touch('a.jpg')
     const controller = new AbortController()
     controller.abort()
