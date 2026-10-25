@@ -39,7 +39,6 @@
     "class-variance-authority": "^0.7.1",
     "cmdk": "^1.1.1",
     "cn": "^0.3.0",
-    "cross-env": "^10.1.0",
     "drizzle-kit": "^0.31.10",
     "electron": "^44.4.2",
     "electron-builder": "^26.15.3",
