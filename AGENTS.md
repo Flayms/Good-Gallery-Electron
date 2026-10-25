@@ -10,7 +10,7 @@ A Windows desktop gallery for large photo and video libraries (50k–500k files)
 | `docs/architecture.md`   | Architecture overview                                                                                             |
 | `docs/glossary.md`       | Definitions of domain terms                                                                                       |
 | `docs/known-pitfalls.md` | if you encounter problems or pitfalls add them here, either to avoid them in the future or for us to fix later on |
-| `specs/README.md`        | Index of feature specs with their status, conventions and template                                                |
+| `docs/specs/README.md`   | Index of feature specs with their status, conventions and template                                                |
 
 ## Project
 
@@ -35,7 +35,7 @@ A Windows desktop gallery for large photo and video libraries (50k–500k files)
 
 ## Specs
 
-`specs/NNN-name/`. IDs are `REQ-NNN-XX`: never reused, deprecated rather than deleted, and referenced in tests. Spec and code change together.
+`docs/specs/NNN-name/`. IDs are `REQ-NNN-XX`: never reused, deprecated rather than deleted, and referenced in tests. Spec and code change together.
 
 - `spec.md`: Status, Goal, Requirements (Given/When/Then), Out of scope, Assumptions, Verification (REQ | test | result). No implementation details.
 - `plan.md`: Approach, Tasks (linked to REQs).

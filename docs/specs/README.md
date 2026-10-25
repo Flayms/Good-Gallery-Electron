@@ -1,6 +1,6 @@
 # Specs
 
-One folder per feature: `specs/NNN-name/` with `spec.md` (what and why) and, for large or architectural work, `plan.md` (how). Workflow and tiers: see [AGENTS.md](../AGENTS.md). Terms: see [glossary](../docs/glossary.md).
+One folder per feature: `docs/specs/NNN-name/` with `spec.md` (what and why) and, for large or architectural work, `plan.md` (how). Workflow and tiers: see [AGENTS.md](../../AGENTS.md). Terms: see [glossary](../glossary.md).
 
 Specs 001–011 were written retrospectively (2026-10-25) for features built before this workflow existed. Their plans record the approach that was actually taken. Verification results come from `pnpm test` and `pnpm test:e2e` runs on that date.
 
