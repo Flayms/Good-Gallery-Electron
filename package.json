@@ -15,6 +15,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "electron-vite build && playwright test",
+    "screenshots": "electron-vite build && node e2e/screenshots.ts",
     "db:generate": "drizzle-kit generate",
     "dist": "electron-vite build && electron-builder --win",
     "postinstall": "install-electron"

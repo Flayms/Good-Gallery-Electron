@@ -24,12 +24,35 @@ flowchart LR
 
 ## Tech stack
 
-- **Shell:** Electron, electron-vite, Vite
-- **UI:** React, Tailwind CSS, shadcn/ui, TanStack Router / Query / Virtual
-- **API:** tRPC over a custom IPC link, zod, superjson
-- **Data:** better-sqlite3, Drizzle ORM
-- **Media:** sharp, exiftool-vendored, ffmpeg-static, thumbhash
-- **Tooling:** TypeScript 7, Biome, Vitest, Playwright, electron-builder
+| Concern   | Technology              | Purpose                                             |
+| --------- | ----------------------- | --------------------------------------------------- |
+| Framework | Electron, electron-vite | Desktop application framework                       |
+| Framework | electron-builder        | Windows installer                                   |
+| UI        | React                   | Component framework                                 |
+| UI        | Tailwind CSS            | Styling, replaces CSS                               |
+| UI        | shadcn/ui               | Components with good styling defaults               |
+| UI        | Radix UI, cmdk, sonner  | Primitives behind shadcn (menus, command, toasts)   |
+| UI        | lucide-react, Geist     | Icons, font                                         |
+| UI        | TanStack Router         | Type-safe, file-based routing                       |
+| Tooling   | Vite                    | Build tool                                          |
+| Tooling   | TypeScript 7            | Language                                            |
+| Tooling   | Mise                    | Tool version management (Node, pnpm)                |
+| Tooling   | pnpm                    | Package management                                  |
+| Tooling   | Biome                   | Lint + format                                       |
+| Tooling   | Vitest                  | Unit and integration testing                        |
+| Tooling   | Playwright              | E2E testing against the built app                   |
+| Database  | better-sqlite3          | Fast local database (WAL)                           |
+| Database  | Drizzle                 | ORM + migrations                                    |
+| Misc      | TanStack Query          | Data fetching and caching                           |
+| Misc      | TanStack Virtual        | Virtualized masonry, justified, grid and list views |
+| Misc      | Zod                     | Schema validation                                   |
+| Misc      | tRPC (custom IPC link)  | Frontend–backend end-to-end type safety             |
+| Misc      | superjson               | Rich types (Date, Map, …) over tRPC                 |
+| Misc      | p-queue                 | Concurrency limits for scan and thumbnail jobs      |
+| Media     | sharp                   | Image decoding and thumbnails                       |
+| Media     | exiftool-vendored       | Metadata and embedded tags                          |
+| Media     | ffmpeg-static           | Video frames for thumbnails                         |
+| Media     | thumbhash               | Placeholder previews while thumbnails load          |
 
 ## Dependency placement
 

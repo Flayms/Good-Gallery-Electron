@@ -26,5 +26,6 @@
   * Role names match substrings by default: `button 'Rating'` also hits the sidebar's `Ratings` trigger. Use `exact: true`.
   * The Radix `Slider` puts its `aria-label` on the root, not on the `slider` thumb: `getByLabel('Zoom', { exact: true }).getByRole('slider')`.
   * The tag suggestions stay open after picking one and cover the grid; press Escape before clicking tiles.
+  * Tag suggestions load asynchronously, but the "File name contains" option shows up right away: clicking the first option before the tags arrive picks the file name filter.
   * `evaluate` callbacks need DOM types: they come from `tsconfig.e2e.json`. Don't add `/// <reference lib="dom" />` to node-project files - it leaks into main and breaks `Buffer`/stream `BodyInit` types.
 * **electron-builder** sometimes fails with `EPERM ... rename` while extracting NSIS into its cache; rerunning `pnpm exec electron-builder --win` works.

@@ -2,6 +2,8 @@
 
 A Windows desktop gallery for large photo and video libraries (50k–500k files). Media appear in a virtualized masonry, justified, grid or list view. Libraries on network shares are supported, and thumbnails are cached locally. Search uses the tags that are already embedded in your files.
 
+![Masonry view with the sidebar showing libraries, people, places, ratings and tags](docs/screenshots/masonry.png)
+
 ## Features
 
 - **Views:** Masonry (columns), Justified (rows of equal height), Grid (square tiles) and List (details). All are virtualized, so they stay fast at any library size. Zoom the tile views with the slider, the +/- buttons or Ctrl + mouse wheel.
@@ -11,6 +13,14 @@ A Windows desktop gallery for large photo and video libraries (50k–500k files)
 - **Sidebar:** libraries with a folder tree, People and Places (from keyword hierarchies and face regions), ratings and popular tags.
 - **Viewer:** keyboard navigation, zoom and pan, video playback, a metadata panel and "Show in Explorer".
 - **Read-only:** tags and ratings come from EXIF / IPTC / XMP and `.xmp` sidecars. Files are never modified.
+
+| Justified                                                   | Grid                                            |
+| ----------------------------------------------------------- | ----------------------------------------------- |
+| ![Justified view](docs/screenshots/justified.png)           | ![Grid view](docs/screenshots/grid.png)         |
+| **List**                                                    | **Tag search**                                  |
+| ![List view with dates, sizes and ratings](docs/screenshots/list.png) | ![Tag search with suggestions](docs/screenshots/search.png) |
+
+![Viewer with the metadata panel](docs/screenshots/viewer.png)
 
 Supported formats: JPEG, PNG, WebP, GIF and AVIF images, plus videos (with poster-frame thumbnails).
 
@@ -37,6 +47,7 @@ Add a library folder under **Settings**.
 | `pnpm typecheck`   | Type-check the node, web and e2e projects              |
 | `pnpm test`        | Unit tests (Vitest)                                    |
 | `pnpm test:e2e`    | Build, then run the Playwright Electron smoke test     |
+| `pnpm screenshots` | Build, then render the README screenshots into `docs/screenshots/` from a generated demo library |
 | `pnpm db:generate` | Generate a Drizzle migration after changing the schema |
 
 ## Development
