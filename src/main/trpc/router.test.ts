@@ -209,6 +209,30 @@ describe('media.byIds', () => {
 
     expect(items.map((item) => item.fileName)).toEqual(['a.jpg'])
   })
+
+  it('REQ-017-01: tells which tag categories each item has', async () => {
+    const root = insertRoot()
+    const insertTag = (name: string, parentId: number | null = null) =>
+      db.insert(tags).values({ name, nameNorm: name.toLowerCase(), parentId }).returning().get().id
+    const location = insertTag('Location')
+    const paris = insertTag('Paris', insertTag('France', location))
+    const anna = insertTag('Anna', insertTag('Persons'))
+    const cat = insertTag('Cat', insertTag('Animals'))
+    const file = (name: string, tagIds: number[]) => {
+      const id = insertMedia(root.id, name).id
+      for (const tagId of tagIds) db.insert(mediaTags).values({ mediaId: id, tagId }).run()
+      return id
+    }
+    const ids = [file('all.jpg', [paris, anna, cat]), file('place.jpg', [location]), file('none.jpg', [])]
+
+    const items = await caller.media.byIds({ ids })
+
+    expect(ids.map((id) => items.find((item) => item.id === id)?.tagged)).toEqual([
+      { places: true, people: true, other: true },
+      { places: true, people: false, other: false },
+      { places: false, people: false, other: false },
+    ])
+  })
 })
 
 describe('media.layout tags', () => {

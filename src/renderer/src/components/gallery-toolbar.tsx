@@ -5,6 +5,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar'
 import { ViewMenu } from '@/components/view-menu'
 import type { GalleryView } from '@/hooks/use-gallery-view'
 import type { GallerySearch } from '@/lib/search'
+import type { TagIndicatorChoice } from '@/lib/tag-indicators'
 
 interface GalleryToolbarProps {
   search: GallerySearch
@@ -15,6 +16,8 @@ interface GalleryToolbarProps {
   onColumnsChange: (update: number | ((columns: number) => number)) => void
   groupByDay: boolean
   onGroupByDayChange: (groupByDay: boolean) => void
+  tagIndicators: TagIndicatorChoice
+  onTagIndicatorsChange: (tagIndicators: TagIndicatorChoice) => void
 }
 
 /** Search, filters and view options in the glass bar over the gallery; fits the minimum window width. */

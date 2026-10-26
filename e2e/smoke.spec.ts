@@ -604,6 +604,51 @@ test('indexes a library, browses it, filters by tag and shows details', async ()
     await closeMenu(page)
   })
 
+  await test.step('REQ-017-01, REQ-017-02, REQ-017-03: shows the picked tag indicators on tiles', async () => {
+    const badges = page.locator('[data-tag-indicators]')
+    const indicators = (name: string) =>
+      page
+        .getByRole('link', { name })
+        .getByRole('img', { name: /^(Rated|Has)/ })
+        .evaluateAll((images) => images.map((image) => image.getAttribute('aria-label')))
+    const shown = page.getByRole('switch', { name: 'Tag indicators' })
+    const picks = page.getByRole('toolbar', { name: 'Shown tag indicators' })
+
+    // Off until the user turns them on, with every indicator picked.
+    await expect(badges).toHaveCount(0)
+    await viewOptions.click()
+    await expect(shown).not.toBeChecked()
+    await expect(picks.getByRole('button')).toHaveCount(4)
+    for (const pick of await picks.getByRole('button').all()) {
+      await expect(pick).toHaveAttribute('aria-pressed', 'true')
+      await expect(pick).toBeDisabled()
+    }
+    await shown.click()
+    await expect(badges).toHaveCount(3)
+    expect(await indicators('city.jpg')).toEqual(['Rated 5 out of 5', 'Has people', 'Has tags'])
+    expect(await indicators('forest.jpg')).toEqual(['Has places'])
+    expect(await indicators('beach.jpg')).toEqual(['Has tags'])
+    expect(await indicators(VIDEO)).toEqual([])
+
+    await picks.getByRole('button', { name: 'Tags' }).click()
+    await expect(badges).toHaveCount(2)
+    expect(await indicators('city.jpg')).toEqual(['Rated 5 out of 5', 'Has people'])
+    await shown.click()
+    await expect(badges).toHaveCount(0)
+    await closeMenu(page)
+
+    // Both choices survive a reload.
+    await page.reload()
+    await expect(tiles).toHaveCount(FIXTURES.length + 1)
+    await expect(badges).toHaveCount(0)
+    await viewOptions.click()
+    await shown.click()
+    await expect(badges).toHaveCount(2)
+    await expect(picks.getByRole('button', { name: 'Tags' })).toHaveAttribute('aria-pressed', 'false')
+    await shown.click()
+    await closeMenu(page)
+  })
+
   await test.step('REQ-013-03, REQ-013-05: the gallery scrolls under the glass toolbar; focus shows on photos', async () => {
     // At two columns the fixtures are taller than the window.
     await viewOptions.click()

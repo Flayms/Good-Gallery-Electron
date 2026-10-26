@@ -12,6 +12,7 @@ import { useGalleryMedia } from '@/hooks/use-gallery-media'
 import type { GalleryView } from '@/hooks/use-gallery-view'
 import { groupsShown } from '@/lib/date-groups'
 import type { GallerySearch } from '@/lib/search'
+import type { TagIndicatorChoice } from '@/lib/tag-indicators'
 import { cn } from '@/lib/utils'
 
 /** From this zoom level on, tiles are small: narrower gaps and corners. */
@@ -59,12 +60,14 @@ export function Gallery({
   view,
   columns,
   groupByDay,
+  tagIndicators,
   hasLibraries,
 }: {
   search: GallerySearch
   view: GalleryView
   columns: number
   groupByDay: boolean
+  tagIndicators: TagIndicatorChoice
   hasLibraries: boolean
 }) {
   const {
@@ -128,7 +131,7 @@ export function Gallery({
   const renderTile = (index: number, size: { width: number }) => {
     const item = getItem(index)
     return item ? (
-      <MediaTile item={item} width={size.width} dense={dense} />
+      <MediaTile item={item} width={size.width} dense={dense} tagIndicators={tagIndicators} />
     ) : (
       <div className={cn('size-full bg-muted', dense ? 'rounded-xs' : 'rounded-sm')} />
     )

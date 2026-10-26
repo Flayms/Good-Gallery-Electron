@@ -1,6 +1,7 @@
 import { join } from 'node:path'
 import { ASPECT_SCALE, tileAspect } from '@shared/aspect'
 import { dateGroups } from '@shared/date-groups'
+import type { TagCategory } from '@shared/tags'
 import { TRPCError } from '@trpc/server'
 import { and, asc, count, desc, eq, gte, inArray, isNull, lt, or, type SQL, sql } from 'drizzle-orm'
 import { z } from 'zod'
@@ -90,6 +91,31 @@ function sortOrder(input: SearchInput): SQL[] {
   const order = input.dir === 'asc' ? asc : desc
   const columns = SORT_COLUMNS[input.sortBy]
   return [...columns.map((column) => order(column)), ...(input.sortBy === 'path' ? [] : [order(media.id)])]
+}
+
+/** Whether a media item has tags of the People or Places category, or other tags (REQ-017-01). */
+export type TaggedCategories = Record<TagCategory | 'other', boolean>
+
+const UNTAGGED: TaggedCategories = { people: false, places: false, other: false }
+
+function taggedCategories(db: Db, ids: number[]): Map<number, TaggedCategories> {
+  const result = new Map<number, TaggedCategories>()
+  if (ids.length === 0) return result
+  const links = db
+    .select({ mediaId: mediaTags.mediaId, tagId: mediaTags.tagId })
+    .from(mediaTags)
+    .where(inArray(mediaTags.mediaId, ids))
+    .all()
+  const categories = categoriesOf(db, [...new Set(links.map((link) => link.tagId))])
+  for (const { mediaId, tagId } of links) {
+    let flags = result.get(mediaId)
+    if (!flags) {
+      flags = { ...UNTAGGED }
+      result.set(mediaId, flags)
+    }
+    flags[categories.get(tagId) ?? 'other'] = true
+  }
+  return result
 }
 
 function absolutePath(rootPath: string, relPath: string): string {
@@ -196,9 +222,9 @@ export const mediaRouter = router({
       .all(),
   ),
 
-  /** Tile and list data for the given ids, in no particular order. */
-  byIds: publicProcedure.input(z.object({ ids: z.array(z.int()).max(MAX_BY_IDS) })).query(({ ctx, input }) =>
-    ctx.db
+  /** Tile and list data for the given ids, in no particular order, with the tag categories each item has. */
+  byIds: publicProcedure.input(z.object({ ids: z.array(z.int()).max(MAX_BY_IDS) })).query(({ ctx, input }) => {
+    const items = ctx.db
       .select({
         id: media.id,
         rootId: media.rootId,
@@ -217,6 +243,8 @@ export const mediaRouter = router({
       })
       .from(media)
       .where(inArray(media.id, input.ids))
-      .all(),
-  ),
+      .all()
+    const tagged = taggedCategories(ctx.db, input.ids)
+    return items.map((item) => ({ ...item, tagged: tagged.get(item.id) ?? { ...UNTAGGED } }))
+  }),
 })

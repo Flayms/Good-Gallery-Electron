@@ -10,6 +10,7 @@ A desktop gallery for large photo and video libraries (50k–500k files). Media 
 | `docs/architecture.md`   | Architecture overview                                                                                             |
 | `docs/design.md`         | Visual design: principles, tokens, surfaces, type, motion, writing. Read before any UI work                       |
 | `docs/glossary.md`       | Definitions of domain terms                                                                                       |
+| `docs/roadmap.md`        | Upcoming features and bug reports.                                                                                |
 | `docs/known-pitfalls.md` | if you encounter problems or pitfalls add them here, either to avoid them in the future or for us to fix later on |
 | `docs/specs/README.md`   | Index of feature specs with their status, conventions and template                                                |
 

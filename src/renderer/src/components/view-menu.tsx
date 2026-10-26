@@ -21,6 +21,7 @@ import { MAX_COLUMNS, MIN_COLUMNS } from '@/hooks/use-columns'
 import { GALLERY_VIEWS, type GalleryView, isGalleryView, VIEW_LABELS } from '@/hooks/use-gallery-view'
 import { isDateSort } from '@/lib/date-groups'
 import { DEFAULT_DIR, DEFAULT_SORT, type GallerySearch, isSortField, SORT_FIELDS, SORT_LABELS } from '@/lib/search'
+import { TAG_INDICATOR_LABELS, TAG_INDICATORS, type TagIndicatorChoice } from '@/lib/tag-indicators'
 
 const VIEW_ICONS: Record<GalleryView, LucideIcon> = {
   masonry: LayoutDashboardIcon,
@@ -38,9 +39,11 @@ interface ViewMenuProps {
   onColumnsChange: (update: number | ((columns: number) => number)) => void
   groupByDay: boolean
   onGroupByDayChange: (groupByDay: boolean) => void
+  tagIndicators: TagIndicatorChoice
+  onTagIndicatorsChange: (tagIndicators: TagIndicatorChoice) => void
 }
 
-/** Gallery view, zoom, sort order and grouping; the trigger shows the current view. */
+/** Gallery view, zoom, sort order, grouping and tag indicators; the trigger shows the current view. */
 export function ViewMenu({
   search,
   onSearchChange,
@@ -50,6 +53,8 @@ export function ViewMenu({
   onColumnsChange,
   groupByDay,
   onGroupByDayChange,
+  tagIndicators,
+  onTagIndicatorsChange,
 }: ViewMenuProps) {
   const descending = (search.dir ?? DEFAULT_DIR) === 'desc'
   const dateSort = isDateSort(search)
@@ -172,6 +177,43 @@ export function ViewMenu({
           </label>
           <Switch id="group-by-day" checked={groupByDay} onCheckedChange={onGroupByDayChange} disabled={!dateSort} />
         </div>
+
+        <section className="flex flex-col gap-2" aria-label="Tag indicators">
+          <div className="flex items-center gap-2">
+            <label htmlFor="tag-indicators" className="flex min-w-0 flex-1 flex-col">
+              <span className="font-semibold">Tag indicators</span>
+              {!zoomable && <span className="text-muted-foreground">Not in the List view</span>}
+            </label>
+            <Switch
+              id="tag-indicators"
+              checked={tagIndicators.shown}
+              onCheckedChange={(shown) => onTagIndicatorsChange({ ...tagIndicators, shown })}
+            />
+          </div>
+          {/* The picks are kept while indicators are off, so turning them on again restores them. */}
+          <ToggleGroup
+            type="multiple"
+            size="sm"
+            variant="outline"
+            spacing={0}
+            value={tagIndicators.picked}
+            onValueChange={(values) =>
+              onTagIndicatorsChange({
+                ...tagIndicators,
+                picked: TAG_INDICATORS.filter((kind) => values.includes(kind)),
+              })
+            }
+            disabled={!tagIndicators.shown}
+            aria-label="Shown tag indicators"
+            className="w-full *:flex-1"
+          >
+            {TAG_INDICATORS.map((kind) => (
+              <ToggleGroupItem key={kind} value={kind}>
+                {TAG_INDICATOR_LABELS[kind]}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </section>
       </PopoverContent>
     </Popover>
   )

@@ -7,6 +7,7 @@ import { useColumns } from '@/hooks/use-columns'
 import { useCtrlWheelZoom } from '@/hooks/use-ctrl-wheel-zoom'
 import { useGalleryView } from '@/hooks/use-gallery-view'
 import { useGroupByDay } from '@/hooks/use-group-by-day'
+import { useTagIndicators } from '@/hooks/use-tag-indicators'
 import { type GallerySearch, gallerySearch } from '@/lib/search'
 import { trpc } from '@/lib/trpc'
 
@@ -22,6 +23,7 @@ function GalleryLayout() {
   const [columns, setColumns] = useColumns()
   const [view, setView] = useGalleryView()
   const [groupByDay, setGroupByDay] = useGroupByDay()
+  const [tagIndicators, setTagIndicators] = useTagIndicators()
   const libraries = useQuery(trpc.libraries.list.queryOptions())
   const gridRef = useRef<HTMLDivElement>(null)
   // Scrolling down zooms out, i.e. adds columns. The list has no zoom.
@@ -46,12 +48,15 @@ function GalleryLayout() {
           onColumnsChange={setColumns}
           groupByDay={groupByDay}
           onGroupByDayChange={setGroupByDay}
+          tagIndicators={tagIndicators}
+          onTagIndicatorsChange={setTagIndicators}
         />
         <Gallery
           search={search}
           view={view}
           columns={columns}
           groupByDay={groupByDay}
+          tagIndicators={tagIndicators}
           hasLibraries={(libraries.data?.length ?? 0) > 0}
         />
       </div>
