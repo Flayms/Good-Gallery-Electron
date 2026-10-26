@@ -132,6 +132,11 @@ describe('REQ-016-06: windowing', () => {
     expect(itemsInView(layout, 300, 400)).toEqual([3, 5])
   })
 
+  it('REQ-006-08: finds no items before the width is known', () => {
+    const unmeasured = tileLayout({ ...base, count: 20_000, width: 0 })
+    expect(itemsInView(unmeasured, -600, 600)).toEqual([0, 0])
+  })
+
   it('finds the headers in a range', () => {
     expect(headersInView(layout, 0, 100)).toEqual([0, 1])
     expect(headersInView(layout, 100, 300)).toEqual([1, 2])

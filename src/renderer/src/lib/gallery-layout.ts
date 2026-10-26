@@ -159,6 +159,8 @@ function lowerBound(length: number, test: (index: number) => boolean): number {
 
 /** Items `[start, end)` that may intersect the range `[top, bottom)`: all that do, and a few tiles above it. */
 export function itemsInView(layout: TileLayout, top: number, bottom: number): [number, number] {
+  // Before the width is known no item is placed: all would sit at 0 and be "in view" at once.
+  if (layout.totalHeight === 0) return [0, 0]
   const count = layout.top.length
   const start = lowerBound(count, (i) => (layout.top[i] ?? 0) >= top - layout.maxHeight)
   const end = lowerBound(count, (i) => (layout.top[i] ?? 0) >= bottom)
