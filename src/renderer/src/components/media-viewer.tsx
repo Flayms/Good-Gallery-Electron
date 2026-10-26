@@ -1,7 +1,7 @@
-import { mediaUrl } from '@shared/media-urls'
+import { mediaUrl, THUMB_WIDTHS, thumbUrl } from '@shared/media-urls'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { ChevronLeftIcon, ChevronRightIcon, FolderOpenIcon, InfoIcon, XIcon } from 'lucide-react'
-import { type CSSProperties, useEffect, useMemo, useState } from 'react'
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { MediaContextMenu } from '@/components/media-context-menu'
 import { MediaInfo, Rating } from '@/components/media-info'
@@ -12,6 +12,8 @@ import { useIdle } from '@/hooks/use-idle'
 import { ambientGlassStyle } from '@/lib/ambient'
 import { formatDateTime } from '@/lib/format'
 import { controlsHidden } from '@/lib/idle'
+import { Preloader, pickPreview } from '@/lib/preload'
+import { thumbhashDataUrl } from '@/lib/thumbhash'
 import { trpc } from '@/lib/trpc'
 import { cn } from '@/lib/utils'
 
@@ -24,21 +26,19 @@ export interface MediaNeighbour {
   kind?: 'image' | 'video'
 }
 
-function preload(item: MediaNeighbour | undefined) {
-  if (item?.kind === 'image') new Image().src = mediaUrl(item.id)
-}
-
 interface MediaViewerProps {
   id: number
   /** Neighbours in the gallery order, if the item is part of the gallery. */
   prev?: MediaNeighbour
   next?: MediaNeighbour
+  /** Gallery items around this one whose photos are preloaded (REQ-009-13). */
+  nearby?: MediaNeighbour[]
   onNavigate: (id: number) => void
   onClose: () => void
 }
 
 /** Full-window lightbox: arrow keys / buttons navigate, images zoom and pan, `i` toggles the info panel. */
-export function MediaViewer({ id, prev, next, onNavigate, onClose }: MediaViewerProps) {
+export function MediaViewer({ id, prev, next, nearby = [], onNavigate, onClose }: MediaViewerProps) {
   const { data: item, error } = useQuery(trpc.media.byId.queryOptions({ id }, { placeholderData: keepPreviousData }))
   const [showInfo, setShowInfo] = useState(false)
   const [hovering, setHovering] = useState(false)
@@ -50,6 +50,17 @@ export function MediaViewer({ id, prev, next, onNavigate, onClose }: MediaViewer
   )
   const thumbhash = item?.thumbhash
   const tint = useMemo(() => (thumbhash ? (ambientGlassStyle(thumbhash) as CSSProperties) : undefined), [thumbhash])
+  const placeholder = useMemo(() => (thumbhash ? thumbhashDataUrl(thumbhash) : undefined), [thumbhash])
+  const preloader = useRef<Preloader>(null)
+  const shownId = item?.id
+  // The thumbnail its tile already loaded shows at once; it's only replaced by the original (REQ-009-14).
+  const preview = useMemo(
+    () =>
+      shownId === undefined
+        ? undefined
+        : pickPreview(THUMB_WIDTHS.toReversed().map((width) => thumbUrl(shownId, width))),
+    [shownId],
+  )
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -65,10 +76,15 @@ export function MediaViewer({ id, prev, next, onNavigate, onClose }: MediaViewer
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [prev, next, onNavigate, onClose])
 
+  // The shown photo stays in the set, so stepping away from it and back doesn't load it again.
+  const preloadKey = [item?.id === id ? item : undefined, ...nearby]
+    .flatMap((neighbour) => (neighbour?.kind === 'image' ? [mediaUrl(neighbour.id)] : []))
+    .join(' ')
   useEffect(() => {
-    preload(next)
-    preload(prev)
-  }, [prev, next])
+    preloader.current ??= new Preloader()
+    preloader.current.set(preloadKey ? preloadKey.split(' ') : [])
+  }, [preloadKey])
+  useEffect(() => () => preloader.current?.set([]), [])
 
   // A new video starts playing; only a pause by the user keeps the controls.
   // biome-ignore lint/correctness/useExhaustiveDependencies: resets whenever the shown item changes.
@@ -120,7 +136,15 @@ export function MediaViewer({ id, prev, next, onNavigate, onClose }: MediaViewer
             />
           )}
           {item?.kind === 'image' && (
-            <ZoomableImage key={item.id} src={mediaUrl(item.id)} alt={item.fileName} onBackdropClick={onClose} />
+            <ZoomableImage
+              key={item.id}
+              src={mediaUrl(item.id)}
+              alt={item.fileName}
+              size={item.width && item.height ? { width: item.width, height: item.height } : undefined}
+              preview={preview}
+              placeholder={placeholder}
+              onBackdropClick={onClose}
+            />
           )}
         </div>
       </MediaContextMenu>

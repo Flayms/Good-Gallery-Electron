@@ -1,6 +1,18 @@
-import { type MouseEvent, type PointerEvent, useCallback, useEffect, useRef, useState, type WheelEvent } from 'react'
+import {
+  type MouseEvent,
+  type PointerEvent,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type WheelEvent,
+} from 'react'
+
+type OriginalState = 'pending' | 'loaded' | 'failed'
+
 import { cn } from '@/lib/utils'
-import { FIT, MAX_SCALE, type Size, type ZoomView, zoomTo } from '@/lib/zoom'
+import { FIT, fitSize, MAX_SCALE, type Size, type ZoomView, zoomTo } from '@/lib/zoom'
 
 const WHEEL_SENSITIVITY = 0.002
 const KEY_ZOOM_STEP = 1.25
@@ -17,19 +29,71 @@ function sizeOf(element: HTMLElement): Size {
 interface ZoomableImageProps {
   src: string
   alt: string
+  /** Pixel size of the original, if known; lets the preview take the original's place before it has loaded. */
+  size?: Size
+  /** Shown until the original has loaded (REQ-009-14): its thumbnail, or a placeholder data URL without one. */
+  preview?: string
+  placeholder?: string
   /** Fires for a plain (non-double) click that lands on the letterboxing around the image, not the image itself. */
   onBackdropClick?: () => void
 }
 
-/** Image fitted into its container; wheel / double-click / `+` `-` `0` zoom, dragging pans. */
-export function ZoomableImage({ src, alt, onBackdropClick }: ZoomableImageProps) {
+/**
+ * Image fitted into its container; wheel / double-click / `+` `-` `0` zoom, dragging pans. Until the original has
+ * loaded, its thumbnail stands in for it at the same size (REQ-009-14, REQ-009-15).
+ */
+export function ZoomableImage({ src, alt, size, preview, placeholder, onBackdropClick }: ZoomableImageProps) {
   const viewportRef = useRef<HTMLDivElement>(null)
-  const imageRef = useRef<HTMLImageElement>(null)
+  // The zoomed frame holds the preview and the original; zoom math works on its layout size.
+  const imageRef = useRef<HTMLDivElement>(null)
+  const originalRef = useRef<HTMLImageElement>(null)
   const drag = useRef<{ pointerId: number; x: number; y: number; view: ZoomView; dragged: boolean } | null>(null)
   const clickTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const [view, setView] = useState(FIT)
+  const [viewportSize, setViewportSize] = useState<Size>()
+  const [natural, setNatural] = useState(size)
+  const [original, setOriginal] = useState<OriginalState>('pending')
+  // An original that is ready on mount (preloaded, REQ-009-13) shows without preview and fade.
+  const [instant, setInstant] = useState(false)
+  // The preview stays under the original until it has faded in.
+  const [settled, setSettled] = useState(false)
+  // Without a cached thumbnail the placeholder stands in.
+  const [previewFailed, setPreviewFailed] = useState(false)
 
   useEffect(() => () => clearTimeout(clickTimer.current), [])
+
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current
+    if (!viewport) return
+    // Measured before the first paint, so the preview is in place when the viewer appears.
+    setViewportSize(sizeOf(viewport))
+    const observer = new ResizeObserver(() => setViewportSize(sizeOf(viewport)))
+    observer.observe(viewport)
+    return () => observer.disconnect()
+  }, [])
+
+  useLayoutEffect(() => {
+    const image = originalRef.current
+    if (!image?.complete || image.naturalWidth === 0) return
+    setNatural((known) => known ?? { width: image.naturalWidth, height: image.naturalHeight })
+    setOriginal('loaded')
+    setInstant(true)
+  }, [])
+
+  const onOriginalLoad = () => {
+    const image = originalRef.current
+    if (!image) return
+    setNatural((known) => known ?? { width: image.naturalWidth, height: image.naturalHeight })
+    // Decoded first, so the fade doesn't stall on a large photo.
+    image
+      .decode()
+      .catch(() => {})
+      .then(() => {
+        setOriginal('loaded')
+        // Without a transition (reduced motion) there is no transitionend to wait for.
+        if (getComputedStyle(image).transitionDuration === '0s') setSettled(true)
+      })
+  }
 
   /** Zooms around a point given in client coordinates, or around the center. */
   const zoom = useCallback((scale: (current: ZoomView) => number, client?: { x: number; y: number }) => {
@@ -71,7 +135,7 @@ export function ZoomableImage({ src, alt, onBackdropClick }: ZoomableImageProps)
     clearTimeout(clickTimer.current)
     const image = imageRef.current
     // Toggles between fitted and actual pixels (at least 2×, so small images zoom too).
-    const actual = image ? image.naturalWidth / Math.max(1, image.offsetWidth) : 2
+    const actual = image && natural ? natural.width / Math.max(1, image.offsetWidth) : 2
     zoom((current) => (current.scale > 1 ? 1 : Math.min(MAX_SCALE, Math.max(2, actual))), {
       x: event.clientX,
       y: event.clientY,
@@ -105,6 +169,8 @@ export function ZoomableImage({ src, alt, onBackdropClick }: ZoomableImageProps)
   }
 
   const zoomed = view.scale > 1
+  const fitted = natural && viewportSize ? fitSize(natural, viewportSize) : undefined
+  const showPreview = !instant && !settled
   return (
     // To assistive tech this is just the image; the mouse gestures mirror the global `+` `-` `0` keys.
     // biome-ignore lint/a11y/useKeyWithClickEvents: mouse-only convenience; Escape already closes the viewer.
@@ -124,15 +190,60 @@ export function ZoomableImage({ src, alt, onBackdropClick }: ZoomableImageProps)
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
-      <img
+      <div
         ref={imageRef}
-        src={src}
-        alt={alt}
-        draggable={false}
         data-viewer-media
-        className="max-h-full max-w-full select-none object-contain"
-        style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})` }}
-      />
+        className="relative shrink-0 select-none"
+        style={{
+          width: fitted?.width,
+          height: fitted?.height,
+          transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
+        }}
+      >
+        {showPreview && (
+          <div
+            aria-hidden
+            data-viewer-preview
+            className="absolute inset-0 bg-center bg-cover"
+            style={
+              placeholder && (!preview || previewFailed) ? { backgroundImage: `url("${placeholder}")` } : undefined
+            }
+          >
+            {preview && !previewFailed && (
+              <img
+                src={preview}
+                alt=""
+                draggable={false}
+                className="size-full object-contain"
+                onError={() => setPreviewFailed(true)}
+              />
+            )}
+          </div>
+        )}
+        <img
+          ref={originalRef}
+          src={src}
+          alt={alt}
+          draggable={false}
+          data-viewer-original
+          className={cn(
+            'absolute inset-0 size-full object-contain',
+            !instant && 'transition-opacity duration-(--duration-base)',
+            original === 'loaded' ? 'opacity-100' : 'opacity-0',
+          )}
+          onLoad={onOriginalLoad}
+          onError={() => setOriginal('failed')}
+          onTransitionEnd={() => original === 'loaded' && setSettled(true)}
+        />
+        {original === 'failed' && (
+          <p
+            className="glass-bar absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-4 py-1.5 text-sm"
+            role="alert"
+          >
+            Can't load the original. Showing a preview.
+          </p>
+        )}
+      </div>
     </div>
   )
 }

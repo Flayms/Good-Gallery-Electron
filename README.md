@@ -1,6 +1,6 @@
 # Good Gallery
 
-A Windows desktop gallery for large photo and video libraries (50k–500k files). Media appear in a virtualized masonry, justified, grid or list view. Libraries on network shares are supported, and thumbnails are cached locally. Search uses the tags that are already embedded in your files.
+A desktop gallery for large photo and video libraries (50k–500k files). Media appear in a virtualized masonry, justified, grid or list view. Libraries on network shares are supported, and thumbnails are cached locally. Search uses the tags that are already embedded in your files.
 
 ![Masonry view with the sidebar showing libraries, people, places, ratings and tags](docs/screenshots/masonry.png)
 
@@ -15,10 +15,10 @@ A Windows desktop gallery for large photo and video libraries (50k–500k files)
 - **Look:** dark, neutral chrome so only your photos bring color; the toolbar and menus are frosted glass over the gallery.
 - **Read-only:** tags and ratings come from EXIF / IPTC / XMP and `.xmp` sidecars. Files are never modified.
 
-| Justified                                                   | Grid                                            |
-| ----------------------------------------------------------- | ----------------------------------------------- |
-| ![Justified view](docs/screenshots/justified.png)           | ![Grid view](docs/screenshots/grid.png)         |
-| **List**                                                    | **Tag search**                                  |
+| Justified                                                             | Grid                                                        |
+| --------------------------------------------------------------------- | ----------------------------------------------------------- |
+| ![Justified view](docs/screenshots/justified.png)                     | ![Grid view](docs/screenshots/grid.png)                     |
+| **List**                                                              | **Tag search**                                              |
 | ![List view with dates, sizes and ratings](docs/screenshots/list.png) | ![Tag search with suggestions](docs/screenshots/search.png) |
 
 ![Viewer with the metadata panel](docs/screenshots/viewer.png)
@@ -39,18 +39,18 @@ pnpm dev
 
 Add a library folder under **Settings**.
 
-| Script             | Purpose                                                |
-| ------------------ | ------------------------------------------------------ |
-| `pnpm dev`         | Run the app with hot reload                            |
-| `pnpm build`       | Build into `out/`                                      |
-| `pnpm dist`        | Build the installer (`setup.exe`) and the portable zip into `release/<version>/` |
-| `pnpm format`      | Format and lint with Biome (`pnpm lint` only checks)   |
-| `pnpm typecheck`   | Type-check the node, web and e2e projects              |
-| `pnpm test`        | Unit tests (Vitest)                                    |
-| `pnpm test:e2e`    | Build, then run the Playwright Electron smoke test     |
+| Script             | Purpose                                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------------------ |
+| `pnpm dev`         | Run the app with hot reload                                                                      |
+| `pnpm build`       | Build into `out/`                                                                                |
+| `pnpm dist`        | Build the installer (`setup.exe`) and the portable zip into `release/<version>/`                 |
+| `pnpm format`      | Format and lint with Biome (`pnpm lint` only checks)                                             |
+| `pnpm typecheck`   | Type-check the node, web and e2e projects                                                        |
+| `pnpm test`        | Unit tests (Vitest)                                                                              |
+| `pnpm test:e2e`    | Build, then run the Playwright Electron smoke test                                               |
 | `pnpm screenshots` | Build, then render the README screenshots into `docs/screenshots/` from a generated demo library |
-| `pnpm db:generate` | Generate a Drizzle migration after changing the schema |
-| `pnpm release`     | Cut a release: bump the version, update `CHANGELOG.md`, tag and push (`-- --dry-run` previews) |
+| `pnpm db:generate` | Generate a Drizzle migration after changing the schema                                           |
+| `pnpm release`     | Cut a release: bump the version, update `CHANGELOG.md`, tag and push (`-- --dry-run` previews)   |
 
 ## Development
 

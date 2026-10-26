@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clampView, FIT, MAX_SCALE, zoomTo } from './zoom'
+import { clampView, FIT, fitSize, MAX_SCALE, zoomTo } from './zoom'
 
 const viewport = { width: 1000, height: 800 }
 const content = { width: 1000, height: 500 }
@@ -27,5 +27,16 @@ describe('REQ-009-05: clampView', () => {
 
   it('centers content that is smaller than the viewport', () => {
     expect(clampView({ scale: 1.5, x: 0, y: 50 }, content, viewport)).toEqual({ scale: 1.5, x: 0, y: 0 })
+  })
+})
+
+describe('REQ-009-14: fitSize', () => {
+  it('fits large content into the viewport, keeping its aspect ratio', () => {
+    expect(fitSize({ width: 4000, height: 2000 }, viewport)).toEqual({ width: 1000, height: 500 })
+    expect(fitSize({ width: 2000, height: 4000 }, viewport)).toEqual({ width: 400, height: 800 })
+  })
+
+  it('never enlarges content beyond its own size', () => {
+    expect(fitSize({ width: 300, height: 200 }, viewport)).toEqual({ width: 300, height: 200 })
   })
 })

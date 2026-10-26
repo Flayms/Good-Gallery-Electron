@@ -47,3 +47,9 @@ export function zoomTo(
     viewport,
   )
 }
+
+/** Size of `content` fitted into `viewport` (scale 1), never enlarged beyond its own size. */
+export function fitSize(content: Size, viewport: Size): Size {
+  const ratio = Math.min(1, viewport.width / content.width, viewport.height / content.height)
+  return { width: content.width * ratio, height: content.height * ratio }
+}

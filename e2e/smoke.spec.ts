@@ -134,6 +134,42 @@ function viewTransitions(page: Page): Promise<TransitionRecord[] | undefined> {
   return page.evaluate(() => (window as Window & { transitions?: TransitionRecord[] }).transitions)
 }
 
+type HeldWindow = Window & { releaseOriginals?: (fail: boolean) => void }
+
+/** Holds back the viewer's originals (gg-media://), as a slow network share would, until `releaseOriginals()`. */
+function holdOriginals(page: Page): Promise<void> {
+  return page.evaluate(() => {
+    const src = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src')
+    const setSrc = src?.set
+    if (!src || !setSrc) throw new Error('No src setter')
+    const setAttribute = Element.prototype.setAttribute
+    const held: [HTMLImageElement, string][] = []
+    // React sets an image's source both ways.
+    const holds = (image: unknown, value: string) =>
+      image instanceof HTMLImageElement && value.startsWith('gg-media:') && held.push([image, value]) > 0
+    Object.defineProperty(HTMLImageElement.prototype, 'src', {
+      ...src,
+      set(this: HTMLImageElement, value: string) {
+        if (!holds(this, value)) setSrc.call(this, value)
+      },
+    })
+    Element.prototype.setAttribute = function (name: string, value: string) {
+      if (name !== 'src' || !holds(this, value)) setAttribute.call(this, name, value)
+    }
+    ;(window as HeldWindow).releaseOriginals = (fail) => {
+      Object.defineProperty(HTMLImageElement.prototype, 'src', src)
+      Element.prototype.setAttribute = setAttribute
+      // An unknown id answers 404.
+      for (const [image, value] of held) setSrc.call(image, fail ? 'gg-media://media/999999999' : value)
+    }
+  })
+}
+
+/** Lets held originals load, or makes them fail. */
+function releaseOriginals(page: Page, { fail = false } = {}): Promise<void> {
+  return page.evaluate((fail) => (window as HeldWindow).releaseOriginals?.(fail), fail)
+}
+
 /**
  * Closes the open toolbar menu and waits until it's gone: while it animates out, it still takes the next Escape.
  */
@@ -327,12 +363,43 @@ test('indexes a library, browses it, filters by tag and shows details', async ()
   })
 
   const viewer = page.getByRole('dialog', { name: 'beach.jpg' })
-  await test.step('REQ-009-04, REQ-009-05, REQ-009-08: shows the original, zooms and shows the info panel', async () => {
+  const frame = viewer.locator('[data-viewer-media]')
+  await test.step('REQ-009-15: a failed original leaves the thumbnail and says so', async () => {
+    await holdOriginals(page)
     await tiles.first().click()
+    await expect(frame.locator('[data-viewer-preview] img')).toBeVisible()
+    await releaseOriginals(page, { fail: true })
+    await expect(viewer.getByText("Can't load the original. Showing a preview.")).toBeVisible()
+    await expect(frame.locator('[data-viewer-preview] img')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(viewer).toBeHidden()
+  })
+
+  await test.step('REQ-009-14: only the thumbnail stands in for a slow original, at its size', async () => {
+    await holdOriginals(page)
+    await tiles.first().click()
+    const preview = frame.locator('[data-viewer-preview]')
+    await expect(preview.locator('img')).toHaveAttribute('src', /^gg-thumb:/)
+    // 1200 × 800, in place before the original has loaded.
+    const before = await frame.boundingBox()
+    expect(before && Math.round((before.width / before.height) * 100)).toBe(150)
+    // Well past any loading delay: still just the thumbnail, no placeholder and no indicator.
+    await page.waitForTimeout(1000)
+    expect(await preview.evaluate((element) => getComputedStyle(element).backgroundImage)).toBe('none')
+    await expect(viewer.getByRole('status')).toHaveCount(0)
+    await releaseOriginals(page)
+    await expect(frame.locator('[data-viewer-original]')).toHaveCSS('opacity', '1')
+    await expect(preview).toHaveCount(0)
+    expect(await frame.boundingBox()).toEqual(before)
+  })
+
+  await test.step('REQ-009-04, REQ-009-05, REQ-009-08: shows the original, zooms and shows the info panel', async () => {
+    const original = viewer.locator('[data-viewer-original]')
     // The original is streamed over gg-media://.
-    await expect.poll(() => naturalWidth(viewer.locator('img'))).toBe(1200)
-    const transform = () => viewer.locator('img').evaluate((image) => image.style.transform)
-    await viewer.locator('img').hover()
+    await expect.poll(() => naturalWidth(original)).toBe(1200)
+    const transform = () =>
+      viewer.locator('[data-viewer-media]').evaluate((frame) => (frame as HTMLElement).style.transform)
+    await original.hover()
     await page.mouse.wheel(0, -300)
     await expect.poll(transform).not.toContain('scale(1)')
     await page.keyboard.press('0')

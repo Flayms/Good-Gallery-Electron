@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo } from 'react'
 import { z } from 'zod'
 import { MediaViewer } from '@/components/media-viewer'
 import { useGalleryMedia } from '@/hooks/use-gallery-media'
+import { neighbours, PRELOAD_RADIUS } from '@/lib/preload'
 import { markTransitionSource } from '@/lib/view-transition'
 
 const mediaId = z.coerce.number().int().positive()
@@ -23,7 +24,7 @@ function MediaRoute() {
   const index = useMemo(() => ids.indexOf(id), [ids, id])
   // Load the neighbours' data (for preloading) next to the current item.
   useEffect(() => {
-    if (index >= 0) setRange(Math.max(0, index - 1), index + 1)
+    if (index >= 0) setRange(Math.max(0, index - PRELOAD_RADIUS), index + PRELOAD_RADIUS)
   }, [index, setRange])
   const prevId = index > 0 ? ids[index - 1] : undefined
   const nextId = index >= 0 ? ids[index + 1] : undefined
@@ -31,6 +32,7 @@ function MediaRoute() {
   const nextKind = getItem(index + 1)?.kind
   const prev = useMemo(() => (prevId === undefined ? undefined : { id: prevId, kind: prevKind }), [prevId, prevKind])
   const next = useMemo(() => (nextId === undefined ? undefined : { id: nextId, kind: nextKind }), [nextId, nextKind])
+  const nearby = neighbours(ids.length, index).map((at) => ({ id: ids[at] ?? 0, kind: getItem(at)?.kind }))
 
   // The item shrinks back into its tile (REQ-013-12).
   const close = useCallback(() => {
@@ -43,5 +45,5 @@ function MediaRoute() {
       void navigate({ to: '/media/$id', params: { id: target }, search: (prev) => prev, replace: true }),
     [navigate],
   )
-  return <MediaViewer id={id} prev={prev} next={next} onNavigate={show} onClose={close} />
+  return <MediaViewer id={id} prev={prev} next={next} nearby={nearby} onNavigate={show} onClose={close} />
 }

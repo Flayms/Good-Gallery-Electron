@@ -4,8 +4,8 @@ One folder per feature: `docs/specs/NNN-name/` with `spec.md` (what and why) and
 
 Specs 001–011 were written retrospectively (2026-10-25) for features built before this workflow existed. Their plans record the approach that was actually taken. Verification results come from `pnpm test` and `pnpm test:e2e` runs on that date.
 
-| Spec                                                    | Area                                                             | Status      |
-| ------------------------------------------------------- | ---------------------------------------------------------------- | ----------- |
+| Spec                                                     | Area                                                             | Status      |
+| -------------------------------------------------------- | ---------------------------------------------------------------- | ----------- |
 | [001-library-management](001-library-management/spec.md) | Add, remove and rescan libraries                                 | Implemented |
 | [002-indexing](002-indexing/spec.md)                     | Scanning libraries into the index, scan queue, offline libraries | Implemented |
 | [003-change-detection](003-change-detection/spec.md)     | Watcher, quick scans, scheduled checks                           | Implemented |
@@ -53,7 +53,7 @@ One paragraph: who benefits and why.
 
 ## Verification
 
-| REQ        | Test                     | Result |
-| ---------- | ------------------------ | ------ |
+| REQ        | Test                               | Result |
+| ---------- | ---------------------------------- | ------ |
 | REQ-NNN-01 | `path/to/file.test.ts` › test name | pass   |
 ```
