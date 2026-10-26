@@ -27,7 +27,7 @@ flowchart LR
 | Concern   | Technology              | Purpose                                             |
 | --------- | ----------------------- | --------------------------------------------------- |
 | Framework | Electron, electron-vite | Desktop application framework                       |
-| Framework | electron-builder        | Windows installer                                   |
+| Framework | electron-builder        | Windows installer and portable zip                  |
 | UI        | React                   | Component framework                                 |
 | UI        | Tailwind CSS            | Styling, replaces CSS                               |
 | UI        | shadcn/ui               | Components with good styling defaults               |
@@ -41,6 +41,8 @@ flowchart LR
 | Tooling   | Biome                   | Lint + format                                       |
 | Tooling   | Vitest                  | Unit and integration testing                        |
 | Tooling   | Playwright              | E2E testing against the built app                   |
+| Tooling   | GitHub Actions          | CI on every push, release builds on version tags    |
+| Tooling   | git-cliff               | Version bumps and changelog from conventional commits |
 | Database  | better-sqlite3          | Fast local database (WAL)                           |
 | Database  | Drizzle                 | ORM + migrations                                    |
 | Misc      | TanStack Query          | Data fetching and caching                           |

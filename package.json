@@ -2,6 +2,8 @@
   "name": "good-gallery",
   "version": "0.1.0",
   "private": true,
+  "license": "GPL-3.0-only",
+  "author": "Anton Lange",
   "description": "Modern masonry gallery with network-drive thumbnail caching and tag search",
   "type": "module",
   "main": "./out/main/index.js",
@@ -19,6 +21,7 @@
     "screenshots": "electron-vite build && node e2e/screenshots.ts",
     "db:generate": "drizzle-kit generate",
     "dist": "electron-vite build && electron-builder --win",
+    "release": "node scripts/release.ts",
     "postinstall": "install-electron"
   },
   "devDependencies": {
@@ -44,6 +47,7 @@
     "electron": "^44.4.2",
     "electron-builder": "^26.15.3",
     "electron-vite": "6.0.0-beta.1",
+    "git-cliff": "2.14.2",
     "lucide-react": "^1.47.0",
     "radix-ui": "^1.6.7",
     "react": "^19.3.0",

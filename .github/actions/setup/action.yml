@@ -1,0 +1,20 @@
+name: Setup
+description: Installs Node and pnpm from mise.toml and the dependencies from the lockfile.
+
+runs:
+  using: composite
+  steps:
+    - uses: jdx/mise-action@v5
+
+    - id: pnpm-store
+      shell: bash
+      run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+    - uses: actions/cache@v5
+      with:
+        path: ${{ steps.pnpm-store.outputs.path }}
+        key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: pnpm-${{ runner.os }}-
+
+    - shell: bash
+      run: pnpm install --frozen-lockfile

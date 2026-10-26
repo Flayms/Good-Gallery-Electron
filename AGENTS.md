@@ -16,7 +16,7 @@ A desktop gallery for large photo and video libraries (50k–500k files). Media 
 ## Project
 
 - Stack: Electron + electron-vite, React, TanStack, shadcn/ui, tRPC over IPC, SQLite (better-sqlite3 + Drizzle), sharp / exiftool / ffmpeg. Details in `docs/architecture.md`.
-- Test: `pnpm test` (e2e: `pnpm test:e2e`) · Lint: `pnpm format` + `pnpm typecheck` + `pnpm check:specs` · Run: `pnpm dev`
+- Test: `pnpm test` (e2e: `pnpm test:e2e`) · Lint: `pnpm format` + `pnpm typecheck` + `pnpm check:specs` · Run: `pnpm dev` · Release: `pnpm release` (conventional commits, see `README.md`)
 
 ## Principles
 

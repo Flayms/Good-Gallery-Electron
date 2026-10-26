@@ -105,6 +105,9 @@ importers:
       electron-vite:
         specifier: 6.0.0-beta.1
         version: 6.0.0-beta.1(supports-color@7.2.0)(vite@8.3.0(@types/node@24.13.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))
+      git-cliff:
+        specifier: 2.14.2
+        version: 2.14.2
       lucide-react:
         specifier: ^1.47.0
         version: 1.47.0(react@19.3.0)
@@ -3234,6 +3237,41 @@ packages:
 
   get-tsconfig@4.14.3:
     resolution: {integrity: sha512-++QEw4DIY7WGoukz+/+A/8dGYPT9l9yIadnmSgZ8Rjr3YVSVDipQSO9CdnJo9ePqFqUUqh+wk9uIaoiAwsiPkA==}
+
+  git-cliff-darwin-arm64@2.14.2:
+    resolution: {integrity: sha512-Ylk39hv5flEUrXeoGvH6M3WjHBNERFH7a9DVEcGU2a8Q7a7fPtVasNk1fMuJ7CVbZCRIzUNyQV0ejRpxBdFnag==}
+    cpu: [arm64]
+    os: [darwin]
+
+  git-cliff-darwin-x64@2.14.2:
+    resolution: {integrity: sha512-3FZNm0BGCIim/3G6uHSWAakrCaGmC47lcI+Cob9CZPMBYHKrenYk0i6B8MlObSXr2Lr7Ve1BpGbd/foQg4NOiA==}
+    cpu: [x64]
+    os: [darwin]
+
+  git-cliff-linux-arm64@2.14.2:
+    resolution: {integrity: sha512-3oMDpoyfsy2angD9ulcCBtyWCkzZqN3spmmtb0jic8OKAu1p+CALS8oep7J8AdgkDojuLo6bdHiSZIM9PeTxmQ==}
+    cpu: [arm64]
+    os: [linux]
+
+  git-cliff-linux-x64@2.14.2:
+    resolution: {integrity: sha512-4EaBYwBiCupECZ2rzC6CelNSGYvkvtJeja4wXLDGtfKnRhCN/WNoqbM+hvrtm32uf5qovfoNoDA906F8itw+oQ==}
+    cpu: [x64]
+    os: [linux]
+
+  git-cliff-windows-arm64@2.14.2:
+    resolution: {integrity: sha512-0oc0xD/6A+BvInz8imBJulXVOlR9M0nL+d3ibL0lwJvxUVTMQzvoCnsn9OxpsdzXrEisnTvaf+GExoKVJkUcDw==}
+    cpu: [arm64]
+    os: [win32]
+
+  git-cliff-windows-x64@2.14.2:
+    resolution: {integrity: sha512-RFmCMiwGMU8O+rF//wxT7L10ssoDtzI+QFxlbjpA8E1BAEafkmLTQkKalT88ipEweD46P+Sfc20v8RXuE7V/UA==}
+    cpu: [x64]
+    os: [win32]
+
+  git-cliff@2.14.2:
+    resolution: {integrity: sha512-hlXIq4k2Tdj9C59WsD7FsLE0xRGFDozTUuoeqg9toMyVohaVxXiSiLnhM/IQyCmhOh5M4zuNckr2o8qMeuffbg==}
+    engines: {node: ^18.19 || >=20.6}
+    hasBin: true
 
   glob-parent@5.1.2:
     resolution: {integrity: sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow==}
@@ -7781,6 +7819,35 @@ snapshots:
   get-tsconfig@4.14.3:
     dependencies:
       resolve-pkg-maps: 1.0.0
+
+  git-cliff-darwin-arm64@2.14.2:
+    optional: true
+
+  git-cliff-darwin-x64@2.14.2:
+    optional: true
+
+  git-cliff-linux-arm64@2.14.2:
+    optional: true
+
+  git-cliff-linux-x64@2.14.2:
+    optional: true
+
+  git-cliff-windows-arm64@2.14.2:
+    optional: true
+
+  git-cliff-windows-x64@2.14.2:
+    optional: true
+
+  git-cliff@2.14.2:
+    dependencies:
+      execa: 9.6.1
+    optionalDependencies:
+      git-cliff-darwin-arm64: 2.14.2
+      git-cliff-darwin-x64: 2.14.2
+      git-cliff-linux-arm64: 2.14.2
+      git-cliff-linux-x64: 2.14.2
+      git-cliff-windows-arm64: 2.14.2
+      git-cliff-windows-x64: 2.14.2
 
   glob-parent@5.1.2:
     dependencies:

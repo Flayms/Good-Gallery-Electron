@@ -1,0 +1,43 @@
+# Checks every commit and pull request (docs/specs/014-ci-release). Branch protection on main requires the jobs
+# `Lint` and `Test` to pass before a pull request can be merged. The release workflow reuses this one.
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm check:specs
+
+  test:
+    name: Test
+    # The app, its native dependencies and the e2e test target Windows.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - run: pnpm test
+      - run: pnpm test:e2e
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-traces
+          path: test-results/
+          if-no-files-found: ignore

@@ -19,8 +19,13 @@ asarUnpack:
 # Native deps ship N-API prebuilds; no Electron ABI rebuild needed.
 npmRebuild: false
 win:
-  target: nsis
+  target:
+    - nsis
+    # Portable: the unpacked app, extracted once (a single-file portable exe unpacks ~550 MB on every launch).
+    - zip
   executableName: good-gallery
+  # Names the zip; nsis sets its own.
+  artifactName: ${name}-${version}-portable.${ext}
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true

@@ -1,0 +1,81 @@
+# Publishes a GitHub release with the Windows installer for every version tag pushed by `pnpm release`
+# (scripts/release.ts, docs/specs/014-ci-release).
+name: Release
+
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+
+jobs:
+  checks:
+    name: Checks
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    name: Build and publish
+    needs: checks
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.ref_name }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # git-cliff needs the tags and commits since the previous release.
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+
+      - name: Check the version
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "v$version" != "$TAG" ]; then
+            echo "::error::package.json has version $version, but the tag is $TAG."
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Build the installer and the portable zip
+        run: pnpm dist --publish never
+
+      - name: Smoke test the packaged app
+        run: pnpm exec playwright test
+        env:
+          GG_E2E_APP: release/${{ env.VERSION }}/win-unpacked/good-gallery.exe
+
+      - name: Write the release notes
+        run: |
+          # The release title already names the version, so drop the section heading.
+          pnpm exec git-cliff --current --strip all | tail -n +2 > release-notes.md
+          cat >> release-notes.md <<NOTES
+
+          ### 📥 Download
+
+          | File | For |
+          | --- | --- |
+          | **good-gallery-$VERSION-setup.exe** | Installer: pick the folder, installs for your user |
+          | **good-gallery-$VERSION-portable.zip** | Portable: extract anywhere and run \`good-gallery.exe\` |
+
+          The downloads aren't code-signed yet, so Windows SmartScreen may warn about them. For the installer choose _More info_ → _Run anyway_. For the zip, right-click it → _Properties_ → _Unblock_ before extracting.
+          NOTES
+          cat release-notes.md
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$TAG" \
+            "release/$VERSION/good-gallery-$VERSION-setup.exe" \
+            "release/$VERSION/good-gallery-$VERSION-portable.zip" \
+            --title "Good Gallery $VERSION" \
+            --notes-file release-notes.md \
+            --verify-tag
