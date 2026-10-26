@@ -49,12 +49,18 @@ In the viewer, the user sees a single row of thumbnails of the whole gallery bel
 - **Then** the filmstrip fades out with them and returns with them, and stays while the pointer is over it
 - **And** the photo or video doesn't move or change size when it fades
 
+### REQ-015-07 · Videos stand out
+
+- **Given** the filmstrip
+- **When** it shows a video's thumbnail
+- **Then** a play symbol over the thumbnail marks it as a video; photos have none
+
 ## Out of scope
 
 - More than one row, a resizable filmstrip, or a setting for the thumbnail size.
 - Selecting several items, reordering, or dragging items out of the filmstrip.
 - A filmstrip in the gallery outside the viewer.
-- Badges (video duration, rating) on the filmstrip's thumbnails.
+- Video durations and ratings on the filmstrip's thumbnails.
 
 ## Assumptions
 
@@ -71,3 +77,4 @@ In the viewer, the user sees a single row of thumbnails of the whole gallery bel
 | REQ-015-04 | `e2e/smoke.spec.ts` (clicking a thumbnail shows it)                                                                                  | partial: Enter on a focused thumbnail, history and preloading after a jump are untested        |
 | REQ-015-05 | `src/renderer/src/lib/filmstrip.test.ts` › sidewaysDelta                                                                            | partial: loading while scrolling and large galleries are untested (the e2e library has 4 items) |
 | REQ-015-06 | `e2e/smoke.spec.ts` (fades out with the controls without moving the photo, returns on movement); `src/renderer/src/lib/idle.test.ts` › controlsHidden | pass                                                                                           |
+| REQ-015-07 | `e2e/smoke.spec.ts` (play symbol on the video's thumbnail only)                                                                     | pass                                                                                           |

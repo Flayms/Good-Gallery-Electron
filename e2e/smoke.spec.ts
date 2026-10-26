@@ -288,17 +288,26 @@ test('indexes a library, browses it, filters by tag and shows details', async ()
     await page.keyboard.press('Escape')
   })
 
-  await test.step('REQ-009-02, REQ-009-03: arrow keys follow the gallery order', async () => {
+  await test.step('REQ-009-02, REQ-009-03: arrow keys and buttons follow the gallery order', async () => {
     const names = await tiles.evaluateAll((links) => links.map((link) => link.getAttribute('title')))
     await tiles.first().click()
     await expect(page.getByRole('dialog', { name: names[0] ?? '' })).toBeVisible()
     await page.keyboard.press('ArrowRight')
     await expect(page.getByRole('dialog', { name: names[1] ?? '' })).toBeVisible()
+    // The pressed button stays in place (no more than the 1px press feedback).
+    const nextButton = page.getByRole('button', { name: 'Next', exact: true })
+    const released = await nextButton.boundingBox()
+    await page.mouse.move((released?.x ?? 0) + 10, (released?.y ?? 0) + 10)
+    await page.mouse.down()
+    const pressed = await nextButton.boundingBox()
+    await page.mouse.up()
+    expect(Math.abs((pressed?.y ?? 0) - (released?.y ?? 0))).toBeLessThanOrEqual(1)
+    await expect(page.getByRole('dialog', { name: names[2] ?? '' })).toBeVisible()
     await page.keyboard.press('Escape')
     await expect(page.getByRole('dialog')).toBeHidden()
   })
 
-  await test.step('REQ-015-01, REQ-015-02, REQ-015-03, REQ-015-04, REQ-015-06: the filmstrip jumps through the gallery', async () => {
+  await test.step('REQ-015-01, REQ-015-02, REQ-015-03, REQ-015-04, REQ-015-06, REQ-015-07: the filmstrip jumps through the gallery', async () => {
     const names = await tiles.evaluateAll((links) => links.map((link) => link.getAttribute('title') ?? ''))
     const photo = names.findIndex((name) => name.endsWith('.jpg'))
     await tiles.nth(photo).click()
@@ -316,6 +325,14 @@ test('indexes a library, browses it, filters by tag and shows details', async ()
       )
       .toEqual(names)
     await expect(current).toHaveAttribute('title', names[photo] ?? '')
+    // Only the video carries a play symbol.
+    await expect
+      .poll(() =>
+        strip
+          .locator('[data-video-indicator]')
+          .evaluateAll((marks) => marks.map((mark) => mark.closest('button')?.getAttribute('title'))),
+      )
+      .toEqual([VIDEO])
 
     // The photo fits above the filmstrip.
     const media = viewer.locator('[data-viewer-media]')
@@ -450,7 +467,7 @@ test('indexes a library, browses it, filters by tag and shows details', async ()
     expect(await frame.boundingBox()).toEqual(before)
   })
 
-  await test.step('REQ-009-04, REQ-009-05, REQ-009-08: shows the original, zooms and shows the info panel', async () => {
+  await test.step('REQ-009-04, REQ-009-05: shows the original and zooms', async () => {
     const original = viewer.locator('[data-viewer-original]')
     // The original is streamed over gg-media://.
     await expect.poll(() => naturalWidth(original)).toBe(1200)
@@ -461,6 +478,32 @@ test('indexes a library, browses it, filters by tag and shows details', async ()
     await expect.poll(transform).not.toContain('scale(1)')
     await page.keyboard.press('0')
     await expect.poll(transform).toContain('scale(1)')
+  })
+
+  await test.step('REQ-009-16: a click on the photo zooms; beside it the pointer shows it closes', async () => {
+    const transform = () =>
+      viewer.locator('[data-viewer-media]').evaluate((frame) => (frame as HTMLElement).style.transform)
+    const cursorAt = (x: number, y: number) =>
+      page.evaluate(
+        ([x, y]) => {
+          const element = document.elementFromPoint(x, y)
+          return element ? getComputedStyle(element).cursor : ''
+        },
+        [x, y] as const,
+      )
+    const box = await frame.boundingBox()
+    const center = { x: (box?.x ?? 0) + (box?.width ?? 0) / 2, y: (box?.y ?? 0) + (box?.height ?? 0) / 2 }
+    expect(await cursorAt(center.x, center.y)).toBe('zoom-in')
+    expect(await cursorAt((box?.x ?? 0) - 8, center.y)).not.toMatch(/zoom|grab/)
+    await page.mouse.click(center.x, center.y)
+    await expect.poll(transform).not.toContain('scale(1)')
+    expect(await cursorAt(center.x, center.y)).toBe('grab')
+    await page.mouse.click(center.x, center.y)
+    await expect.poll(transform).toContain('scale(1)')
+    await expect(viewer).toBeVisible()
+  })
+
+  await test.step('REQ-009-08: shows the info panel', async () => {
     await page.keyboard.press('i')
     await expect(viewer.getByText(join(library, 'beach.jpg'))).toBeVisible()
     await expect(viewer.getByRole('link', { name: 'Summer' })).toBeVisible()

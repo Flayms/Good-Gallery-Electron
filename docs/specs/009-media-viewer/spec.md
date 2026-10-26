@@ -20,6 +20,7 @@ The user looks at one media item at full quality without losing their place in t
 - **Given** the viewer
 - **When** the user presses ← / → or clicks _Previous_ / _Next_
 - **Then** the previous or next item of the gallery is shown, following its current filters and sort order. There is no _Previous_ on the first item and no _Next_ on the last
+- **And** the _Previous_ / _Next_ buttons stay in place while they are pressed
 - **And** while video controls have focus, ← / → seek the video instead
 - **And** stepping adds no history entries, so Back closes the viewer
 
@@ -110,6 +111,15 @@ Deprecated 2026-10-26: one neighbour each way isn't enough on network shares, wh
 - **When** its original fails to load (e.g. the network share dropped)
 - **Then** a message says so, and the thumbnail stays
 
+### REQ-009-16 · Click to zoom
+
+- **Given** a photo in the viewer
+- **When** the user points at it
+- **Then** the pointer shows a magnifier over a fitted photo and a hand over a zoomed one, and the normal pointer over the area around it, which closes the viewer (REQ-009-03)
+- **When** the user clicks the photo without dragging
+- **Then** a fitted photo zooms to actual pixels (at least 2×) around the pointer, and a zoomed photo fits again
+- **And** a double-click on the photo switches only once, like a single click
+
 ## Out of scope
 
 - Slideshows, rotating, cropping, editing, deleting, copying or sharing files.
@@ -128,7 +138,7 @@ Deprecated 2026-10-26: one neighbour each way isn't enough on network shares, wh
 | REQ        | Test                                                                                                                                                         | Result                                                              |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
 | REQ-009-01 | `e2e/smoke.spec.ts` (tile and list row open the viewer)                                                                                                       | partial: scrolling the viewed item into view is untested            |
-| REQ-009-02 | `e2e/smoke.spec.ts` (→ follows the gallery order)                                                                                                             | partial: buttons, ends of the gallery, video focus and history are untested |
+| REQ-009-02 | `e2e/smoke.spec.ts` (→ and _Next_ follow the gallery order, _Next_ stays in place while pressed)                                                            | partial: _Previous_, ends of the gallery, video focus and history are untested |
 | REQ-009-03 | `e2e/smoke.spec.ts` (Escape, click beside a video)                                                                                                            | partial: double-click and pan release are untested                  |
 | REQ-009-04 | `src/main/protocols.test.ts` › gg-media handler › streams the whole file; `e2e/smoke.spec.ts` (full-width original)                                          | pass                                                                |
 | REQ-009-05 | `src/renderer/src/lib/zoom.test.ts` › zoomTo; clampView; `e2e/smoke.spec.ts` (wheel zoom, `0` resets)                                                        | partial: double-click and dragging are untested                     |
@@ -142,3 +152,4 @@ Deprecated 2026-10-26: one neighbour each way isn't enough on network shares, wh
 | REQ-009-13 | `src/renderer/src/lib/preload.test.ts` › Preloader; neighbours                                                                                              | pass                                                                |
 | REQ-009-14 | `src/renderer/src/lib/zoom.test.ts` › fitSize; `src/renderer/src/lib/preload.test.ts` › pickPreview; `e2e/smoke.spec.ts` (only the thumbnail while the original is held back, original over it at the same size) | partial: showing a preloaded original without a fade is untested |
 | REQ-009-15 | `e2e/smoke.spec.ts` (failed original: message, thumbnail stays) | pass |
+| REQ-009-16 | `e2e/smoke.spec.ts` (cursors on and beside the photo; a click zooms in, the next fits again) | partial: a double-click on the photo is untested |

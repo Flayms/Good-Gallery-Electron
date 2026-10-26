@@ -1,4 +1,5 @@
 import { useVirtualizer } from '@tanstack/react-virtual'
+import { PlayIcon } from 'lucide-react'
 import { type HTMLAttributes, useEffect, useRef } from 'react'
 import { type MediaItem, MediaThumbnail } from '@/components/media-tile'
 import { sidewaysDelta } from '@/lib/filmstrip'
@@ -90,6 +91,18 @@ export function Filmstrip({ ids, current, getItem, onRangeChange, onSelect, clas
                   <MediaThumbnail item={item} width={THUMB_SIZE} badge={false} dense />
                 ) : (
                   <div className="size-full rounded-xs bg-muted" />
+                )}
+                {/* The tile's duration badge doesn't fit; a play symbol still marks videos (REQ-015-07). */}
+                {item?.kind === 'video' && (
+                  <span
+                    aria-hidden
+                    data-video-indicator
+                    className="pointer-events-none absolute inset-0 flex items-center justify-center"
+                  >
+                    <span className="flex size-6 items-center justify-center rounded-full bg-black/60 text-white">
+                      <PlayIcon className="size-3 translate-x-px fill-current" />
+                    </span>
+                  </span>
                 )}
                 {isCurrent && (
                   <span

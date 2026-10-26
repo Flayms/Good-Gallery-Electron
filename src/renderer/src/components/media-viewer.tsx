@@ -106,7 +106,8 @@ export function MediaViewer({ id, prev, next, nearby = [], gallery, onNavigate, 
 
   const control = cn('transition-opacity duration-(--duration-base)', hidden && 'pointer-events-none opacity-0')
   const hover = { onPointerEnter: () => setHovering(true), onPointerLeave: () => setHovering(false) }
-  const navButton = cn(control, 'glass-bar absolute top-1/2 -translate-y-1/2 rounded-full')
+  // Centered by offset, not a translate: the button's press feedback sets its own translate (REQ-009-02).
+  const navButton = cn(control, 'glass-bar absolute top-[calc(50%-1.125rem)] rounded-full')
   const date = item ? (item.takenAt ?? item.mtime) : undefined
   // The media fits above the filmstrip, so it's never covered (REQ-015-01).
   const below = filmstrip ? FILMSTRIP_SPACE : 0

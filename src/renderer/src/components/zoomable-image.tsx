@@ -39,7 +39,7 @@ interface ZoomableImageProps {
 }
 
 /**
- * Image fitted into its container; wheel / double-click / `+` `-` `0` zoom, dragging pans. Until the original has
+ * Image fitted into its container; wheel / click / double-click / `+` `-` `0` zoom, dragging pans. Until the original has
  * loaded, its thumbnail stands in for it at the same size (REQ-009-14, REQ-009-15).
  */
 export function ZoomableImage({ src, alt, size, preview, placeholder, onBackdropClick }: ZoomableImageProps) {
@@ -48,6 +48,8 @@ export function ZoomableImage({ src, alt, size, preview, placeholder, onBackdrop
   const imageRef = useRef<HTMLDivElement>(null)
   const originalRef = useRef<HTMLImageElement>(null)
   const drag = useRef<{ pointerId: number; x: number; y: number; view: ZoomView; dragged: boolean } | null>(null)
+  // Set by the release of a pan, so the click that follows it is ignored.
+  const panned = useRef(false)
   const clickTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const [view, setView] = useState(FIT)
   const [viewportSize, setViewportSize] = useState<Size>()
@@ -123,18 +125,9 @@ export function ZoomableImage({ src, alt, size, preview, placeholder, onBackdrop
     zoom((current) => current.scale * factor, { x: event.clientX, y: event.clientY })
   }
 
-  const onClick = (event: MouseEvent) => {
-    // A pan release or a click on the image itself (not the surrounding letterboxing) never closes the viewer.
-    if (!onBackdropClick || event.target !== event.currentTarget) return
-    clearTimeout(clickTimer.current)
-    // Delayed so a following click (a double-click, handled below) can cancel it instead of also zooming and closing.
-    clickTimer.current = setTimeout(onBackdropClick, CLICK_DELAY)
-  }
-
-  const onDoubleClick = (event: MouseEvent) => {
-    clearTimeout(clickTimer.current)
+  /** Toggles between fitted and actual pixels (at least 2×, so small images zoom too) around the pointer. */
+  const toggleZoom = (event: MouseEvent) => {
     const image = imageRef.current
-    // Toggles between fitted and actual pixels (at least 2×, so small images zoom too).
     const actual = image && natural ? natural.width / Math.max(1, image.offsetWidth) : 2
     zoom((current) => (current.scale > 1 ? 1 : Math.min(MAX_SCALE, Math.max(2, actual))), {
       x: event.clientX,
@@ -142,7 +135,42 @@ export function ZoomableImage({ src, alt, size, preview, placeholder, onBackdrop
     })
   }
 
+  /** By position, not target: while a pan has the pointer captured, clicks target the viewport. */
+  const onImage = (event: MouseEvent) => {
+    const rect = imageRef.current?.getBoundingClientRect()
+    return (
+      !!rect &&
+      event.clientX >= rect.left &&
+      event.clientX <= rect.right &&
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom
+    )
+  }
+
+  const onClick = (event: MouseEvent) => {
+    if (panned.current) {
+      panned.current = false
+      return
+    }
+    // A click on the image zooms (REQ-009-16); the second click of a double-click doesn't switch back.
+    if (onImage(event)) {
+      if (event.detail <= 1) toggleZoom(event)
+      return
+    }
+    if (!onBackdropClick) return
+    clearTimeout(clickTimer.current)
+    // Delayed so a following click (a double-click, handled below) can cancel it instead of also zooming and closing.
+    clickTimer.current = setTimeout(onBackdropClick, CLICK_DELAY)
+  }
+
+  const onDoubleClick = (event: MouseEvent) => {
+    clearTimeout(clickTimer.current)
+    // On the image, the first click already switched.
+    if (!onImage(event)) toggleZoom(event)
+  }
+
   const onPointerDown = (event: PointerEvent) => {
+    panned.current = false
     if (event.button !== 0 || view.scale <= 1) return
     event.currentTarget.setPointerCapture(event.pointerId)
     drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, view, dragged: false }
@@ -164,7 +192,7 @@ export function ZoomableImage({ src, alt, size, preview, placeholder, onBackdrop
   const onPointerUp = (event: PointerEvent) => {
     if (drag.current?.pointerId !== event.pointerId) return
     // A real pan shouldn't also fire the click that follows pointer-up.
-    if (drag.current.dragged) clearTimeout(clickTimer.current)
+    panned.current = drag.current.dragged
     drag.current = null
   }
 
@@ -178,10 +206,7 @@ export function ZoomableImage({ src, alt, size, preview, placeholder, onBackdrop
       ref={viewportRef}
       role="img"
       aria-label={alt}
-      className={cn(
-        'flex size-full touch-none items-center justify-center overflow-hidden',
-        zoomed ? 'cursor-grab active:cursor-grabbing' : 'cursor-zoom-in',
-      )}
+      className="flex size-full touch-none items-center justify-center overflow-hidden"
       onWheel={onWheel}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
@@ -193,7 +218,11 @@ export function ZoomableImage({ src, alt, size, preview, placeholder, onBackdrop
       <div
         ref={imageRef}
         data-viewer-media
-        className="relative shrink-0 select-none"
+        // Only the image shows what a click does; around it, a click closes the viewer (REQ-009-16).
+        className={cn(
+          'relative shrink-0 select-none',
+          zoomed ? 'cursor-grab active:cursor-grabbing' : 'cursor-zoom-in',
+        )}
         style={{
           width: fitted?.width,
           height: fitted?.height,
