@@ -107,6 +107,13 @@ Deprecated 2026-10-25: a backdrop made from the item itself hides where the user
 - **And** the item and the viewer's controls stand out clearly against it
 - **And** with reduced transparency (REQ-013-06) the area around the item is opaque instead
 
+### REQ-013-15 · Scrollbars start below the toolbar
+
+- **Given** a page that scrolls under the toolbar (the gallery in any view, the settings)
+- **When** it is scrolled to the top
+- **Then** its scrollbar, including the thumb, starts below the toolbar, so it never lies under the native window controls
+- **And** the scrollbar looks the same on every platform (REQ-013-01)
+
 ## Out of scope
 
 - A light theme or following the OS light / dark setting (the app stays dark).
@@ -140,3 +147,4 @@ Deprecated 2026-10-25: a backdrop made from the item itself hides where the user
 | REQ-013-12 | `e2e/smoke.spec.ts` (tile and viewer share the transition name, animated both ways) | partial: the fade when the tile isn't rendered is untested |
 | REQ-013-13 | `src/renderer/src/lib/format.test.ts` › formatDateTime | pass |
 | REQ-013-14 | `e2e/smoke.spec.ts` (transparent viewer, blurred scrim, sidebar still painted behind, opaque with reduced transparency) | pass |
+| REQ-013-15 | `e2e/smoke.spec.ts` (scrollbar thumb starts below the toolbar at the top of the gallery) | partial: List view and settings page checked by inspection only |

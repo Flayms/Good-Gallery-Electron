@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { scrollbarInset } from '@/components/app-header'
 import { useContentWidth } from '@/hooks/use-content-width'
 import {
   firstItemFrom,
@@ -157,7 +158,7 @@ export function TileGallery({
   }
 
   return (
-    <div ref={scrollRef} className={cn('h-full overflow-y-auto p-3', className)}>
+    <div ref={scrollRef} className={cn('h-full overflow-y-auto p-3', className)} style={scrollbarInset(insetTop)}>
       <div className="relative w-full" style={{ height: insetTop + layout.totalHeight }}>
         {headers.map((header) => (
           <div

@@ -1,8 +1,13 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 /** Height of the app header, which is also the height of the window's title bar (`TITLE_BAR_HEIGHT` in main). */
 export const APP_HEADER_HEIGHT = 48
+
+/** Style for a scroll container under the header: its scrollbar starts `top` pixels down, below the header. */
+export function scrollbarInset(top: number): CSSProperties {
+  return { '--scrollbar-inset-top': `${top}px` } as CSSProperties
+}
 
 /**
  * Glass bar over the top of a page that doubles as the window's title bar: its empty areas move the window, and the

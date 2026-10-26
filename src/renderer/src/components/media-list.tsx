@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { PlayIcon } from 'lucide-react'
 import { type ReactNode, useCallback, useRef } from 'react'
+import { scrollbarInset } from '@/components/app-header'
 import { MediaContextMenu } from '@/components/media-context-menu'
 import { Rating } from '@/components/media-info'
 import { type MediaItem, MediaThumbnail } from '@/components/media-tile'
@@ -133,7 +134,12 @@ export function MediaList({
   })
 
   return (
-    <div ref={scrollRef} className={cn('h-full overflow-y-auto', className)}>
+    // The scrollbar starts below the sticky column header too.
+    <div
+      ref={scrollRef}
+      className={cn('h-full overflow-y-auto', className)}
+      style={scrollbarInset(insetTop + HEADER_HEIGHT)}
+    >
       <div style={{ height: insetTop }} />
       <div
         role="presentation"

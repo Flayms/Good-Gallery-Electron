@@ -706,6 +706,30 @@ test('indexes a library, browses it, filters by tag and shows details', async ()
     })
   })
 
+  await test.step('REQ-013-15: the scrollbar starts below the toolbar', async () => {
+    // Still at two columns, so the gallery scrolls. The toolbar covers the scrollbar: hide it to capture the bar alone.
+    const gutter = await page.evaluate(async () => {
+      const header = document.querySelector('header')
+      const scroller = header?.parentElement?.querySelector<HTMLElement>('.overflow-y-auto')
+      if (!header || !scroller) throw new Error('No toolbar or gallery')
+      scroller.scrollTop = 0
+      header.style.visibility = 'hidden'
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+      const rect = scroller.getBoundingClientRect()
+      const width = scroller.offsetWidth - scroller.clientWidth
+      return { x: rect.right - width, y: rect.top, width, height: 200, toolbar: header.offsetHeight }
+    })
+    expect(gutter.width).toBeGreaterThan(0)
+    const shot = await page.screenshot({ clip: gutter, scale: 'css' })
+    await page.evaluate(() => document.querySelector('header')?.style.removeProperty('visibility'))
+    // The gutter is the page background (31, 31, 31) except for the lighter thumb.
+    const { data, info } = await sharp(shot).raw().toBuffer({ resolveWithObject: true })
+    const rowHasThumb = (y: number) =>
+      Array.from({ length: info.width }, (_, x) => data[(y * info.width + x) * info.channels] ?? 0).some((r) => r > 50)
+    const thumbTop = Array.from({ length: info.height }, (_, y) => rowHasThumb(y)).indexOf(true)
+    expect(thumbTop).toBeGreaterThanOrEqual(gutter.toolbar)
+  })
+
   await test.step('REQ-013-06: glass turns opaque when the OS reduces transparency', async () => {
     const toolbar = () =>
       page.evaluate(() => {

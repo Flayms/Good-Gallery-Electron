@@ -110,6 +110,7 @@ lucide, 16px, stroke 1.75. An icon earns its place when it helps scanning or rep
 
 - Content runs into the title bar: the toolbar and sidebar header are the window's drag area, and empty toolbar space drags the window.
 - The native window controls stay (right on Windows and Linux, left on macOS). Their space is reserved, so nothing in the app overlaps them. This is the only platform difference.
+- Scrollbars are the app's own: a thin pill (`--scrollbar-thumb`, white at 24 %, 40 % on hover) on a transparent track. Pages that scroll under the toolbar start the track below it with `scrollbarInset()` (`app-header.tsx`), so the thumb never hides under the window controls.
 
 ## Writing
 
