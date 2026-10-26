@@ -22,7 +22,7 @@ A personal archive of photos and videos, often on a NAS, browsed by one person w
 | --------------- | ------------- | --------------------------------------------------------- | ------------------------------------------------------------ |
 | Darkroom        | `bg-background` | `#1F1F1F`                                               | Gallery, settings page                                       |
 | Recess          | `bg-sidebar`  | `#171717`                                                 | Sidebar (nothing is behind it, so it is solid)               |
-| Glass bar       | `glass-bar`   | `rgb(28 28 28 / 0.72)`, blur 24px, saturate 160 %, Rim    | Toolbar, viewer control bar, viewer arrows                   |
+| Glass bar       | `glass-bar`   | `rgb(28 28 28 / 0.72)`, blur 24px, saturate 160 %, Rim    | Toolbar, viewer control bar, viewer arrows, filmstrip        |
 | Glass panel     | `glass-panel` | `rgb(36 36 36 / 0.86)`, blur 32px, saturate 140 %, Rim    | Menus, popovers, select lists, command list, dialogs, sheets, info panel |
 | Field           | `bg-field`    | `rgb(0 0 0 / 0.35)`                                       | Inputs and the search bar on glass                           |
 | Scrim           | `glass-scrim` | `rgb(0 0 0 / 0.5)`, blur 28px, saturate 120 %             | The whole window behind the viewer                           |

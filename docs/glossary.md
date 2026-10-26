@@ -66,4 +66,5 @@ Domain terms used in specs, code and UI. Code names differ from the UI term in s
 | **Search bar**    | The toolbar input with chips for included / excluded tags and the file name filter, plus tag suggestions.                                                       |
 | **Sidebar**       | Navigation on the left: libraries with their folder tree, People, Places, Ratings, Tags, indexer progress and Settings.                                          |
 | **Viewer**        | The full-window overlay that shows one media item in original quality. (also: lightbox)                                                                          |
+| **Filmstrip**     | The optional row of thumbnails of the whole gallery below the media item in the viewer, with the shown item highlighted.         |
 | **Info panel**    | The panel in the viewer with file details, rating and tags. It opens as the **info sheet** when used from the gallery's context menu.                              |

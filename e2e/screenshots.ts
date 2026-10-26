@@ -284,9 +284,10 @@ try {
     .click()
   const viewer = page.getByRole('dialog')
   await expect
-    .poll(() => viewer.locator('img').evaluate((image: HTMLImageElement) => image.naturalWidth))
+    .poll(() => viewer.locator('[data-viewer-original]').evaluate((image: HTMLImageElement) => image.naturalWidth))
     .toBeGreaterThan(0)
   await page.keyboard.press('i')
+  await page.keyboard.press('f')
   await page.waitForTimeout(800)
   await capture(page, 'viewer')
 } finally {

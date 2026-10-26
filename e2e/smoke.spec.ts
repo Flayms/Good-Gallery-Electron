@@ -298,6 +298,63 @@ test('indexes a library, browses it, filters by tag and shows details', async ()
     await expect(page.getByRole('dialog')).toBeHidden()
   })
 
+  await test.step('REQ-015-01, REQ-015-02, REQ-015-03, REQ-015-04, REQ-015-06: the filmstrip jumps through the gallery', async () => {
+    const names = await tiles.evaluateAll((links) => links.map((link) => link.getAttribute('title') ?? ''))
+    const photo = names.findIndex((name) => name.endsWith('.jpg'))
+    await tiles.nth(photo).click()
+    const viewer = page.getByRole('dialog')
+    await expect(page.getByRole('dialog', { name: names[photo] })).toBeVisible()
+    const strip = viewer.getByRole('navigation', { name: 'Filmstrip' })
+    const current = strip.locator('[aria-current="true"]')
+    await expect(strip).toHaveCount(0)
+    await page.keyboard.press('f')
+    // Every gallery item, in the gallery's order.
+    await expect(strip.getByRole('button')).toHaveCount(names.length)
+    await expect
+      .poll(() =>
+        strip.getByRole('button').evaluateAll((buttons) => buttons.map((button) => button.getAttribute('title'))),
+      )
+      .toEqual(names)
+    await expect(current).toHaveAttribute('title', names[photo] ?? '')
+
+    // The photo fits above the filmstrip.
+    const media = viewer.locator('[data-viewer-media]')
+    await expect.poll(async () => (await media.boundingBox())?.height ?? 0).toBeGreaterThan(0)
+    const mediaBox = await media.boundingBox()
+    const stripBox = await strip.boundingBox()
+    expect((mediaBox?.y ?? 0) + (mediaBox?.height ?? 0)).toBeLessThanOrEqual(stripBox?.y ?? 0)
+
+    // Clicking a thumbnail shows it; stepping moves the highlight along.
+    const target = names.length - 1
+    await strip.getByRole('button', { name: names[target] }).click()
+    await expect(page.getByRole('dialog', { name: names[target] })).toBeVisible()
+    await expect(current).toHaveAttribute('title', names[target] ?? '')
+    await page.keyboard.press('ArrowLeft')
+    await expect(current).toHaveAttribute('title', names[target - 1] ?? '')
+
+    // It steps aside with the controls once the pointer rests off it, without moving the media. On a photo: an ended
+    // video counts as paused and keeps the controls.
+    await strip.getByRole('button', { name: names[photo] }).click()
+    await expect(current).toHaveAttribute('title', names[photo] ?? '')
+    await page.mouse.move(300, 200)
+    await page.mouse.move(310, 210)
+    const before = await media.boundingBox()
+    await expect.poll(() => opacity(strip), { timeout: 6000 }).toBe('0')
+    expect(await media.boundingBox()).toEqual(before)
+    await page.mouse.move(320, 220)
+    await expect.poll(() => opacity(strip)).toBe('1')
+
+    // The choice is kept for the next time the viewer opens.
+    await page.keyboard.press('Escape')
+    await expect(viewer).toBeHidden()
+    await tiles.nth(photo).click()
+    await expect(strip).toBeVisible()
+    await viewer.getByRole('button', { name: 'Filmstrip', exact: true }).click()
+    await expect(strip).toHaveCount(0)
+    await page.keyboard.press('Escape')
+    await expect(viewer).toBeHidden()
+  })
+
   await test.step('REQ-013-14, REQ-013-10, REQ-013-11: tinted viewer over the blurred window; controls step aside', async () => {
     const names = await tiles.evaluateAll((links) => links.map((link) => link.getAttribute('title') ?? ''))
     // A photo: a video that has ended counts as paused and keeps the controls.

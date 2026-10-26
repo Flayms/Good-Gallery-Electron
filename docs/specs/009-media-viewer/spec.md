@@ -114,7 +114,7 @@ Deprecated 2026-10-26: one neighbour each way isn't enough on network shares, wh
 
 - Slideshows, rotating, cropping, editing, deleting, copying or sharing files.
 - Opening a file in another app (other than revealing it in Explorer).
-- Fullscreen mode, a filmstrip and comparing items side by side.
+- Fullscreen mode and comparing items side by side. The filmstrip is specified in [015](../015-filmstrip/spec.md).
 - Showing EXIF details beyond REQ-009-08.
 - A larger cached preview between thumbnail and original, and previews for videos (they show their own loading state).
 

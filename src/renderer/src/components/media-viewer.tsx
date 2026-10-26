@@ -1,13 +1,15 @@
 import { mediaUrl, THUMB_WIDTHS, thumbUrl } from '@shared/media-urls'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
-import { ChevronLeftIcon, ChevronRightIcon, FolderOpenIcon, InfoIcon, XIcon } from 'lucide-react'
+import { ChevronLeftIcon, ChevronRightIcon, FolderOpenIcon, GalleryHorizontalIcon, InfoIcon, XIcon } from 'lucide-react'
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { FILMSTRIP_HEIGHT, Filmstrip, type FilmstripProps } from '@/components/filmstrip'
 import { MediaContextMenu } from '@/components/media-context-menu'
 import { MediaInfo, Rating } from '@/components/media-info'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { ZoomableImage } from '@/components/zoomable-image'
+import { useFilmstrip } from '@/hooks/use-filmstrip'
 import { useIdle } from '@/hooks/use-idle'
 import { ambientGlassStyle } from '@/lib/ambient'
 import { formatDateTime } from '@/lib/format'
@@ -33,14 +35,25 @@ interface MediaViewerProps {
   next?: MediaNeighbour
   /** Gallery items around this one whose photos are preloaded (REQ-009-13). */
   nearby?: MediaNeighbour[]
+  /** The gallery for the filmstrip (spec 015). */
+  gallery?: Pick<FilmstripProps, 'ids' | 'current' | 'getItem' | 'onRangeChange'>
   onNavigate: (id: number) => void
   onClose: () => void
 }
 
-/** Full-window lightbox: arrow keys / buttons navigate, images zoom and pan, `i` toggles the info panel. */
-export function MediaViewer({ id, prev, next, nearby = [], onNavigate, onClose }: MediaViewerProps) {
+/** Room below the media for the control bar, plus the filmstrip when it's shown. */
+const CONTROLS_SPACE = 80
+const FILMSTRIP_SPACE = FILMSTRIP_HEIGHT + 12
+
+/**
+ * Full-window lightbox: arrow keys / buttons navigate, images zoom and pan, `i` toggles the info panel, `f` the
+ * filmstrip.
+ */
+export function MediaViewer({ id, prev, next, nearby = [], gallery, onNavigate, onClose }: MediaViewerProps) {
   const { data: item, error } = useQuery(trpc.media.byId.queryOptions({ id }, { placeholderData: keepPreviousData }))
   const [showInfo, setShowInfo] = useState(false)
+  const [showFilmstrip, setShowFilmstrip] = useFilmstrip()
+  const filmstrip = showFilmstrip && gallery !== undefined
   const [hovering, setHovering] = useState(false)
   const [videoPaused, setVideoPaused] = useState(false)
   const idle = useIdle(IDLE_MS)
@@ -71,10 +84,11 @@ export function MediaViewer({ id, prev, next, nearby = [], onNavigate, onClose }
       else if (event.key === 'ArrowLeft' && prev && !inVideo) onNavigate(prev.id)
       else if (event.key === 'ArrowRight' && next && !inVideo) onNavigate(next.id)
       else if (event.key === 'i') setShowInfo((show) => !show)
+      else if (event.key === 'f') setShowFilmstrip((show) => !show)
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [prev, next, onNavigate, onClose])
+  }, [prev, next, onNavigate, onClose, setShowFilmstrip])
 
   // The shown photo stays in the set, so stepping away from it and back doesn't load it again.
   const preloadKey = [item?.id === id ? item : undefined, ...nearby]
@@ -94,6 +108,8 @@ export function MediaViewer({ id, prev, next, nearby = [], onNavigate, onClose }
   const hover = { onPointerEnter: () => setHovering(true), onPointerLeave: () => setHovering(false) }
   const navButton = cn(control, 'glass-bar absolute top-1/2 -translate-y-1/2 rounded-full')
   const date = item ? (item.takenAt ?? item.mtime) : undefined
+  // The media fits above the filmstrip, so it's never covered (REQ-015-01).
+  const below = filmstrip ? FILMSTRIP_SPACE : 0
   return (
     <div
       role="dialog"
@@ -114,9 +130,10 @@ export function MediaViewer({ id, prev, next, nearby = [], onNavigate, onClose }
         <div
           // The open info panel takes its width from the media area, so it never covers the photo.
           className={cn(
-            'absolute inset-0 flex items-center justify-center px-16 pt-12 pb-20',
+            'absolute inset-0 flex items-center justify-center px-16 pt-12',
             showInfo && 'pr-[calc(20rem+2.25rem)]',
           )}
+          style={{ paddingBottom: CONTROLS_SPACE + below }}
           onClick={(event) => {
             if (event.target === event.currentTarget) onClose()
           }}
@@ -181,8 +198,9 @@ export function MediaViewer({ id, prev, next, nearby = [], onNavigate, onClose }
         aria-label="Viewer controls"
         className={cn(
           control,
-          'glass-bar absolute bottom-4 left-1/2 flex h-12 max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-3 rounded-full pr-1.5 pl-5',
+          'glass-bar absolute left-1/2 flex h-12 max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-3 rounded-full pr-1.5 pl-5',
         )}
+        style={{ bottom: 16 + below }}
         {...hover}
       >
         <span className="min-w-0 truncate font-semibold">{item?.fileName}</span>
@@ -211,6 +229,19 @@ export function MediaViewer({ id, prev, next, nearby = [], onNavigate, onClose }
           >
             <InfoIcon />
           </Button>
+          {gallery && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn('rounded-full', showFilmstrip && 'bg-accent')}
+              onClick={() => setShowFilmstrip((show) => !show)}
+              aria-label="Filmstrip"
+              aria-pressed={showFilmstrip}
+              title="Filmstrip (f)"
+            >
+              <GalleryHorizontalIcon />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -226,9 +257,21 @@ export function MediaViewer({ id, prev, next, nearby = [], onNavigate, onClose }
       </div>
 
       {showInfo && item && (
-        <aside className="glass-panel absolute top-14 right-3 bottom-20 flex w-80 flex-col overflow-y-auto rounded-xl p-4 text-sm">
+        <aside
+          className="glass-panel absolute top-14 right-3 flex w-80 flex-col overflow-y-auto rounded-xl p-4 text-sm"
+          style={{ bottom: CONTROLS_SPACE + below }}
+        >
           <MediaInfo item={item} />
         </aside>
+      )}
+
+      {filmstrip && (
+        <Filmstrip
+          {...gallery}
+          onSelect={onNavigate}
+          className={cn(control, 'absolute inset-x-3 bottom-3')}
+          {...hover}
+        />
       )}
     </div>
   )

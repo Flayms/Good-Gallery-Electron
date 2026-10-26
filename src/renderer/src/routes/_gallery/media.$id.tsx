@@ -33,6 +33,9 @@ function MediaRoute() {
   const prev = useMemo(() => (prevId === undefined ? undefined : { id: prevId, kind: prevKind }), [prevId, prevKind])
   const next = useMemo(() => (nextId === undefined ? undefined : { id: nextId, kind: nextKind }), [nextId, nextKind])
   const nearby = neighbours(ids.length, index).map((at) => ({ id: ids[at] ?? 0, kind: getItem(at)?.kind }))
+  // The filmstrip loads the items it shows on its own, wherever the user scrolls it (REQ-015-05).
+  const strip = useGalleryMedia(search)
+  const gallery = { ids: strip.ids, current: index, getItem: strip.getItem, onRangeChange: strip.setRange }
 
   // The item shrinks back into its tile (REQ-013-12).
   const close = useCallback(() => {
@@ -45,5 +48,7 @@ function MediaRoute() {
       void navigate({ to: '/media/$id', params: { id: target }, search: (prev) => prev, replace: true }),
     [navigate],
   )
-  return <MediaViewer id={id} prev={prev} next={next} nearby={nearby} onNavigate={show} onClose={close} />
+  return (
+    <MediaViewer id={id} prev={prev} next={next} nearby={nearby} gallery={gallery} onNavigate={show} onClose={close} />
+  )
 }
