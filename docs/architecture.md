@@ -46,7 +46,7 @@ flowchart LR
 | Database  | better-sqlite3          | Fast local database (WAL)                           |
 | Database  | Drizzle                 | ORM + migrations                                    |
 | Misc      | TanStack Query          | Data fetching and caching                           |
-| Misc      | TanStack Virtual        | Virtualized masonry, justified, grid and list views |
+| Misc      | TanStack Virtual        | Virtualized list view and filmstrip; the tile views position tiles themselves (`lib/gallery-layout.ts`) |
 | Misc      | Zod                     | Schema validation                                   |
 | Misc      | tRPC (custom IPC link)  | Frontend–backend end-to-end type safety             |
 | Misc      | superjson               | Rich types (Date, Map, …) over tRPC                 |

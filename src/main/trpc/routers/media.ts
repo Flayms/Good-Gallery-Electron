@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import { ASPECT_SCALE, tileAspect } from '@shared/aspect'
+import { dateGroups } from '@shared/date-groups'
 import { TRPCError } from '@trpc/server'
 import { and, asc, count, desc, eq, gte, inArray, isNull, lt, or, type SQL, sql } from 'drizzle-orm'
 import { z } from 'zod'
@@ -72,6 +73,9 @@ function filters(db: Db, input: SearchInput): SQL | undefined {
     ...tagFilters,
   )
 }
+
+/** Date that items are grouped by for the date sorts; other sorts have no groups. */
+const GROUP_DATES = { taken: media.sortDate, modified: media.mtime } as const
 
 const SORT_COLUMNS = {
   name: [media.fileNameLower],
@@ -148,10 +152,20 @@ export const mediaRouter = router({
     ctx.desktop.showItemInFolder(absolutePath(row.rootPath, row.relPath))
   }),
 
-  /** Ids and aspects of every match in sort order: the gallery lays out the whole result before loading any item. */
+  /**
+   * Ids and aspects of every match in sort order: the gallery lays out the whole result before loading any item. Date
+   * sorts also return the day groups, so turning grouping on or off needs no refetch.
+   */
   layout: publicProcedure.input(searchInput).query(({ ctx, input }) => {
+    const groupDate = input.sortBy === 'taken' || input.sortBy === 'modified' ? GROUP_DATES[input.sortBy] : undefined
     const rows = ctx.db
-      .select({ id: media.id, width: media.width, height: media.height })
+      .select({
+        id: media.id,
+        width: media.width,
+        height: media.height,
+        kind: media.kind,
+        date: groupDate ?? sql<number>`0`,
+      })
       .from(media)
       .where(filters(ctx.db, input))
       .orderBy(...sortOrder(input))
@@ -162,7 +176,14 @@ export const mediaRouter = router({
       ids[i] = row.id
       aspects[i] = Math.round(tileAspect(row.width, row.height) * ASPECT_SCALE)
     })
-    return { ids, aspects }
+    const groups = groupDate
+      ? dateGroups(
+          rows.length,
+          (i) => rows[i]?.date ?? 0,
+          (i) => rows[i]?.kind === 'video',
+        )
+      : []
+    return { ids, aspects, groups }
   }),
 
   /** Number of media per rating (`0` = unrated), across all libraries; ratings without media are left out. */

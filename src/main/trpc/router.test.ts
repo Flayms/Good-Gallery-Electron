@@ -157,6 +157,46 @@ describe('media.layout', () => {
 
     expect(await layoutIds({ from: 20, to: 30 })).toEqual([ids[1]])
   })
+
+  it('REQ-016-01, REQ-016-02: groups consecutive items by local day of the date taken, with kind counts', async () => {
+    const root = insertRoot()
+    const at = (day: number, hour: number, minute = 0) => new Date(2026, 9, day, hour, minute).getTime()
+    insertMedia(root.id, 'late.jpg', { takenAt: at(26, 23, 59) })
+    insertMedia(root.id, 'clip.mp4', { kind: 'video', takenAt: at(26, 0, 0) })
+    // No date taken: grouped by its date modified, as in sorting.
+    insertMedia(root.id, 'undated.jpg', { mtime: at(25, 12) })
+    insertMedia(root.id, 'early.jpg', { takenAt: at(24, 8) })
+    insertMedia(root.id, 'earlier.jpg', { takenAt: at(24, 7) })
+
+    expect((await caller.media.layout({})).groups).toEqual([
+      { day: '2026-10-26', start: 0, photos: 1, videos: 1 },
+      { day: '2026-10-25', start: 2, photos: 1, videos: 0 },
+      { day: '2026-10-24', start: 3, photos: 2, videos: 0 },
+    ])
+    expect((await caller.media.layout({ dir: 'asc' })).groups.map((group) => [group.day, group.start])).toEqual([
+      ['2026-10-24', 0],
+      ['2026-10-25', 2],
+      ['2026-10-26', 3],
+    ])
+  })
+
+  it('REQ-016-01: groups by the date modified when sorted by it', async () => {
+    const root = insertRoot()
+    insertMedia(root.id, 'a.jpg', { mtime: new Date(2026, 0, 2, 9).getTime(), takenAt: 1 })
+    insertMedia(root.id, 'b.jpg', { mtime: new Date(2026, 0, 1, 9).getTime(), takenAt: 2 })
+
+    expect((await caller.media.layout({ sortBy: 'modified' })).groups.map((group) => group.day)).toEqual([
+      '2026-01-02',
+      '2026-01-01',
+    ])
+  })
+
+  it.each(['name', 'path', 'size'] as const)('REQ-016-04: returns no groups when sorted by %s', async (sortBy) => {
+    const root = insertRoot()
+    insertMedia(root.id, 'a.jpg', { takenAt: 1 })
+
+    expect((await caller.media.layout({ sortBy })).groups).toEqual([])
+  })
 })
 
 describe('media.byIds', () => {

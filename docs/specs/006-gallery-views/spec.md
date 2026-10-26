@@ -83,7 +83,7 @@ The user scrolls through hundreds of thousands of media items as smoothly as thr
 ## Out of scope
 
 - Selecting multiple media items, and drag and drop to other apps.
-- Grouping by date or folder (section headers).
+- Grouping by folder (section headers). Grouping by day is in 016.
 - Custom column sets or sorting by clicking list headers (sorting is in 007).
 - A setting for the gap size or tile corner radius.
 

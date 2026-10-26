@@ -1,0 +1,22 @@
+# 016 · Date groups · Plan
+
+## Approach
+
+- **Groups come from main.** `media.layout` also returns `groups: { day, start, photos, videos }[]` (`day` = local `YYYY-MM-DD`, `start` = index of the group's first item) when sorted by `taken` (`sortDate`) or `modified` (`mtime`), and an empty list otherwise. The query also selects that date and `kind`. Day boundaries are computed in one pass: a new local day is only worked out when the date leaves the current day's `[start, end)` range, so 500k rows cost about as much as one `Date` per group. Groups are always returned, whether grouping is shown or not. The gallery and the viewer then keep sharing one cached layout query, and turning grouping on or off needs no refetch. Main and renderer run on the same machine, so they use the same local time zone (as `mediaSearchInput` already assumes for the date filter).
+- **Setting:** `useDateGroups()` stores a boolean in `localStorage` (`gallery.groupByDay`, default `true`), like `useGalleryView`. `ViewMenu` gets a _Group by day_ switch. It is disabled with the hint when the sort field isn't a date. `Gallery` passes `groups` only when the setting is on and the list isn't empty. Otherwise the whole result is one group without a header.
+- **One layout engine for the tile views.** TanStack's `lanes` virtualizer can't place a full-width header between masonry tiles, so Masonry, Justified and Grid move to a pure layout function. `lib/gallery-layout.ts`: `tileLayout(view, count, aspectAt, groups, width, columns, gap, headerHeight)` → typed arrays `top/left/width/height` per item, header boxes and `totalHeight`. It lays out each group separately: masonry places each tile in the shortest column (`columnWidth`, `tileHeight`, the same as today), justified reuses `justifiedRows` / `rowItemWidths` per group, and grid uses square masonry. In every view the item tops never decrease. In masonry, a new tile goes to the shortest column, whose height never shrinks, and groups only stack downwards. So `visibleRange(layout, scrollTop, viewportHeight)` binary-searches the tops and looks back by the tallest tile. That makes windowing O(log n), and the scroll height is exact up front (REQ-006-08).
+- **`TileGallery` component** replaces `MasonryGrid` and `JustifiedRows`. It renders the visible tiles and headers absolutely positioned, with overscan, and tracks `scrollTop` / viewport height (`useContentWidth` + a scroll listener in rAF). It keeps the `useVirtualAnchor` behaviour without a TanStack virtualizer. When the layout changes, the first visible item's new top is restored, and `scrollToIndex` scrolls an item into view (`auto` alignment, below `insetTop`). Turning grouping on or off is a layout change, so it keeps the anchor (REQ-016-03).
+- **List view** stays on TanStack. Virtual items are headers and media items: `index ↔ virtual index` maps go into `useVirtualAnchor`'s existing `toItem` / `toVirtual`. The header rows are only as tall as the content needs.
+- **Header** (`components/date-group-header.tsx`): `formatDay(day, locale)` (weekday and long date) and `formatGroupCount(photos, videos)` go in `lib/format.ts`. The styling follows `docs/design.md` (Mist label, tabular figures). It is not sticky.
+- **Docs:** glossary gets **Date group**, 006 "Out of scope" drops date grouping and points to 016, README and screenshots are updated, and the specs index gets a row.
+
+## Tasks
+
+- [x] `media.layout` returns groups for date sorts; router tests for day boundaries, local time, kind counts, the date-taken fallback and the empty list for other sorts (REQ-016-01, REQ-016-04)
+- [x] `formatDay`, `formatGroupCount` with unit tests (REQ-016-02)
+- [x] `useDateGroups` setting and the _Group by day_ switch in `ViewMenu`, disabled for non-date sorts (REQ-016-03, REQ-016-04)
+- [x] `tileLayout` + `visibleRange` with unit tests: per-group masonry / justified / grid, monotonic tops, header boxes, ungrouped equals today's layout (REQ-016-05, REQ-016-06, REQ-006-02 – REQ-006-04)
+- [x] `TileGallery` with windowing, anchoring and `scrollToIndex`; remove `MasonryGrid` / `JustifiedRows` (REQ-016-05, REQ-016-06, REQ-006-07)
+- [x] Header rows in `MediaList` (REQ-016-05)
+- [x] e2e: headers with date and count by default in every view, switch off and on, disabled under Name sort, choice remembered after reload (REQ-016-01 – REQ-016-05)
+- [x] Docs: glossary, 006 out of scope, README and screenshots, specs index, verification table

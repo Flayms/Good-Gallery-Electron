@@ -15,9 +15,11 @@ import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
+import { Switch } from '@/components/ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { MAX_COLUMNS, MIN_COLUMNS } from '@/hooks/use-columns'
 import { GALLERY_VIEWS, type GalleryView, isGalleryView, VIEW_LABELS } from '@/hooks/use-gallery-view'
+import { isDateSort } from '@/lib/date-groups'
 import { DEFAULT_DIR, DEFAULT_SORT, type GallerySearch, isSortField, SORT_FIELDS, SORT_LABELS } from '@/lib/search'
 
 const VIEW_ICONS: Record<GalleryView, LucideIcon> = {
@@ -34,11 +36,23 @@ interface ViewMenuProps {
   onViewChange: (view: GalleryView) => void
   columns: number
   onColumnsChange: (update: number | ((columns: number) => number)) => void
+  groupByDay: boolean
+  onGroupByDayChange: (groupByDay: boolean) => void
 }
 
-/** Gallery view, zoom and sort order; the trigger shows the current view. */
-export function ViewMenu({ search, onSearchChange, view, onViewChange, columns, onColumnsChange }: ViewMenuProps) {
+/** Gallery view, zoom, sort order and grouping; the trigger shows the current view. */
+export function ViewMenu({
+  search,
+  onSearchChange,
+  view,
+  onViewChange,
+  columns,
+  onColumnsChange,
+  groupByDay,
+  onGroupByDayChange,
+}: ViewMenuProps) {
   const descending = (search.dir ?? DEFAULT_DIR) === 'desc'
+  const dateSort = isDateSort(search)
   const zoomable = view !== 'list'
   const ViewIcon = VIEW_ICONS[view]
   return (
@@ -149,6 +163,15 @@ export function ViewMenu({ search, onSearchChange, view, onViewChange, columns, 
             </Button>
           </div>
         </MenuSection>
+
+        {/* Days only make sense in date order; the choice is kept for when the user sorts by a date again. */}
+        <div className="flex items-center gap-2">
+          <label htmlFor="group-by-day" className="flex min-w-0 flex-1 flex-col">
+            <span className="font-semibold">Group by day</span>
+            {!dateSort && <span className="text-muted-foreground">Only when sorted by date</span>}
+          </label>
+          <Switch id="group-by-day" checked={groupByDay} onCheckedChange={onGroupByDayChange} disabled={!dateSort} />
+        </div>
       </PopoverContent>
     </Popover>
   )

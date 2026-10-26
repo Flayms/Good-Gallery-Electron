@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatBytes, formatDateTime, formatDuration } from './format'
+import { formatBytes, formatDateTime, formatDay, formatDuration, formatGroupCount } from './format'
 
 describe('REQ-006-09: formatDuration', () => {
   it.each([
@@ -35,5 +35,26 @@ describe('REQ-013-13: formatDateTime', () => {
   ])('uses the medium date and short time of %s', (locale, expected) => {
     // Some ICU versions put a narrow no-break space before AM / PM.
     expect(formatDateTime(date, locale).replace(/\s/g, ' ')).toBe(expected)
+  })
+})
+
+describe('REQ-016-02: formatDay', () => {
+  it.each([
+    ['en-US', 'Monday, October 26, 2026'],
+    ['de-DE', 'Montag, 26. Oktober 2026'],
+  ])('uses the weekday and full date of %s', (locale, expected) => {
+    expect(formatDay('2026-10-26', locale)).toBe(expected)
+  })
+})
+
+describe('REQ-016-02: formatGroupCount', () => {
+  it.each([
+    [42, 0, '42 photos'],
+    [1, 0, '1 photo'],
+    [0, 1, '1 video'],
+    [42, 3, '42 photos · 3 videos'],
+    [12_345, 0, '12,345 photos'],
+  ])('%s photos, %s videos → %s', (photos, videos, expected) => {
+    expect(formatGroupCount(photos, videos, 'en-US')).toBe(expected)
   })
 })

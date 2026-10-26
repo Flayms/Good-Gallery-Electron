@@ -21,6 +21,7 @@ Specs 001–011 were written retrospectively (2026-10-25) for features built bef
 | [013-visual-design](013-visual-design/spec.md)           | Glass chrome, typeface, compact toolbar, viewer over the blur    | Implemented |
 | [014-ci-release](014-ci-release/spec.md)                 | CI checks, release script, changelog and GitHub releases         | Implemented |
 | [015-filmstrip](015-filmstrip/spec.md)                   | Row of thumbnails in the viewer to jump through the gallery      | Implemented |
+| [016-date-groups](016-date-groups/spec.md)               | Group the gallery by day, with date and count headers            | Implemented |
 
 ## Conventions
 

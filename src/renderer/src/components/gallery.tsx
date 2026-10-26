@@ -2,21 +2,21 @@ import { Link, useParams } from '@tanstack/react-router'
 import { FolderPlusIcon, ImagesIcon, TriangleAlertIcon } from 'lucide-react'
 import { type ReactNode, useCallback, useMemo } from 'react'
 import { APP_HEADER_HEIGHT } from '@/components/app-header'
-import { JustifiedRows } from '@/components/justified-rows'
-import { MasonryGrid } from '@/components/masonry-grid'
+import { DATE_GROUP_HEADER_HEIGHT, DateGroupHeader } from '@/components/date-group-header'
 import { MediaList } from '@/components/media-list'
 import { MediaTile } from '@/components/media-tile'
+import { TileGallery } from '@/components/tile-gallery'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useGalleryMedia } from '@/hooks/use-gallery-media'
 import type { GalleryView } from '@/hooks/use-gallery-view'
+import { groupsShown } from '@/lib/date-groups'
 import type { GallerySearch } from '@/lib/search'
 import { cn } from '@/lib/utils'
 
 /** From this zoom level on, tiles are small: narrower gaps and corners. */
 const DENSE_COLUMNS = 8
 const SKELETON_HEIGHTS = [220, 160, 280, 190, 240, 150, 260, 200, 170, 230, 180, 250]
-const SQUARE = () => 1
 
 function EmptyState({ icon, title, children }: { icon: ReactNode; title: string; children?: ReactNode }) {
   return (
@@ -58,11 +58,13 @@ export function Gallery({
   search,
   view,
   columns,
+  groupByDay,
   hasLibraries,
 }: {
   search: GallerySearch
   view: GalleryView
   columns: number
+  groupByDay: boolean
   hasLibraries: boolean
 }) {
   const {
@@ -70,13 +72,19 @@ export function Gallery({
     ids,
     count,
     aspectAt,
+    groups: dateGroups,
     getItem,
     setRange,
   } = useGalleryMedia(search)
+  const groups = groupsShown(groupByDay, search, dateGroups)
   // The viewer navigates through the same items; keep the one it shows in view behind it.
   const viewedId = useParams({ strict: false, select: (params) => params.id })
   const viewedIndex = useMemo(() => (viewedId === undefined ? undefined : ids.indexOf(viewedId)), [ids, viewedId])
   const getKey = useCallback((index: number) => ids[index] ?? -index - 1, [ids])
+  const renderHeader = (group: number) => {
+    const dateGroup = groups[group]
+    return dateGroup ? <DateGroupHeader group={dateGroup} /> : null
+  }
 
   if (isPending) return <GallerySkeleton view={view} columns={columns} />
   if (error) {
@@ -106,6 +114,8 @@ export function Gallery({
         count={count}
         getKey={getKey}
         getItem={getItem}
+        groups={groups}
+        renderHeader={(group) => <div className="h-full px-3">{renderHeader(group)}</div>}
         onRangeChange={setRange}
         scrollToIndex={viewedIndex}
         insetTop={APP_HEADER_HEIGHT}
@@ -123,19 +133,21 @@ export function Gallery({
       <div className={cn('size-full bg-muted', dense ? 'rounded-xs' : 'rounded-sm')} />
     )
   }
-  const Layout = view === 'justified' ? JustifiedRows : MasonryGrid
   return (
-    <Layout
+    <TileGallery
+      view={view}
       count={count}
       getKey={getKey}
-      aspectAt={view === 'grid' ? SQUARE : aspectAt}
+      aspectAt={aspectAt}
+      groups={groups}
       columns={columns}
       gap={dense ? 4 : 8}
+      headerHeight={DATE_GROUP_HEADER_HEIGHT}
       onRangeChange={setRange}
       scrollToIndex={viewedIndex}
       insetTop={APP_HEADER_HEIGHT}
-      className="p-3"
       renderItem={renderTile}
+      renderHeader={renderHeader}
     />
   )
 }

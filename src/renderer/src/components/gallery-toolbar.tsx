@@ -13,6 +13,8 @@ interface GalleryToolbarProps {
   onViewChange: (view: GalleryView) => void
   columns: number
   onColumnsChange: (update: number | ((columns: number) => number)) => void
+  groupByDay: boolean
+  onGroupByDayChange: (groupByDay: boolean) => void
 }
 
 /** Search, filters and view options in the glass bar over the gallery; fits the minimum window width. */

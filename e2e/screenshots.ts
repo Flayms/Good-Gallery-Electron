@@ -89,7 +89,8 @@ function demoLibrary(): Demo[] {
         file: `${trip.folder}/IMG_${String(4100 + n * 7).padStart(4, '0')}.jpg`,
         palette,
         ratio: SIZES[(n * 5) % SIZES.length] as number,
-        date: `${2024 + Math.floor(t / 2)}:0${(t % 2) * 3 + 4}:${String(1 + i).padStart(2, '0')} ${String(6 + i).padStart(2, '0')}:12:00`,
+        // A few photos per day, so the gallery shows date groups of several photos (spec 016).
+        date: `${2024 + Math.floor(t / 2)}:0${(t % 2) * 3 + 4}:${String(1 + Math.floor(i / 4)).padStart(2, '0')} ${String(7 + (i % 4) * 3).padStart(2, '0')}:12:00`,
         tags: {
           Subject: [...keywords[palette], 'Landscape'],
           HierarchicalSubject: [trip.place, ...person],
@@ -173,7 +174,7 @@ async function createLibrary(dir: string): Promise<void> {
   if (!ffmpegPath) throw new Error('ffmpeg-static has no binary for this platform')
   const videos: [string, keyof typeof PALETTES, string][] = [
     ['Trips/2024 Lofoten/VID_0007.mp4', 'fjord', '2024-04-03T09:00:00Z'],
-    ['Trips/2025 Atacama/VID_0012.mp4', 'desert', '2025-04-05T18:00:00Z'],
+    ['Trips/2025 Atacama/VID_0012.mp4', 'desert', '2025-04-03T18:00:00Z'],
   ]
   for (const [index, [file, palette, date]] of videos.entries()) {
     const still = join(dir, '..', `still-${index}.png`)

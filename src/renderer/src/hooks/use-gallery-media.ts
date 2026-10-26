@@ -1,4 +1,5 @@
 import { ASPECT_SCALE } from '@shared/aspect'
+import type { DateGroup } from '@shared/date-groups'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { MediaItem } from '@/components/media-tile'
@@ -11,6 +12,7 @@ const CHUNK_SIZE = 200
 const MAX_REMEMBERED = 20_000
 const NO_IDS: readonly number[] = []
 const NO_ASPECTS: readonly number[] = []
+const NO_GROUPS: readonly DateGroup[] = []
 
 /**
  * The gallery for the search state: the full ordered id list with aspects up front (so the grid knows its exact
@@ -20,6 +22,8 @@ export function useGalleryMedia(search: GallerySearch) {
   const layout = useQuery(trpc.media.layout.queryOptions(mediaSearchInput(search)))
   const ids = layout.data?.ids ?? NO_IDS
   const aspects = layout.data?.aspects ?? NO_ASPECTS
+  // Day groups of a date sort (spec 016), whether the gallery shows them or not.
+  const groups = layout.data?.groups ?? NO_GROUPS
 
   const [range, setRangeState] = useState<readonly [number, number]>([0, 0])
   const setRange = useCallback((start: number, end: number) => {
@@ -49,5 +53,5 @@ export function useGalleryMedia(search: GallerySearch) {
   const getItem = useCallback((index: number) => remembered.current.get(ids[index] ?? -1), [ids, loaded])
   const aspectAt = useCallback((index: number) => (aspects[index] ?? ASPECT_SCALE) / ASPECT_SCALE, [aspects])
 
-  return { layout, ids, count: ids.length, aspectAt, getItem, setRange }
+  return { layout, ids, count: ids.length, aspectAt, groups, getItem, setRange }
 }

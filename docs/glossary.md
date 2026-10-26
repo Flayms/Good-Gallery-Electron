@@ -59,6 +59,7 @@ Domain terms used in specs, code and UI. Code names differ from the UI term in s
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Gallery**       | The scrollable area showing all media items that match the current search, in sort order.                                                                         |
 | **Gallery view**  | How the gallery is laid out: **Masonry** (columns, tiles keep their aspect ratio), **Justified** (rows of equal height), **Grid** (square tiles), **List** (rows with details). |
+| **Date group**    | The media items of one local calendar day of the sort date, under a header with the day and the number of photos and videos. Only when sorted by a date. (UI: _Group by day_) |
 | **Tile**          | One media item in the Masonry, Justified or Grid view.                                                                                                           |
 | **Zoom level**    | The tile size of the gallery as a number of columns (2–12). More columns means smaller tiles. (code: `columns`)                                                  |
 | **Search**        | The filters and sort order of the gallery: tags, file name, library, folder, media kind, date range, rating. Kept in the URL. (code: `GallerySearch`)            |

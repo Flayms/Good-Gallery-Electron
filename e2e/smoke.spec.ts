@@ -519,6 +519,48 @@ test('indexes a library, browses it, filters by tag and shows details', async ()
     }
   })
 
+  await test.step('REQ-016-01, REQ-016-02, REQ-016-03, REQ-016-04, REQ-016-05: groups the gallery by day', async () => {
+    // The fixtures have no date taken and were all written today, so they form one group of their date modified.
+    const today = await page.evaluate(() =>
+      new Intl.DateTimeFormat(undefined, { dateStyle: 'full' }).format(new Date()),
+    )
+    const headers = page.getByRole('heading', { level: 2 })
+    const groupByDay = page.getByRole('switch', { name: /Group by day/ })
+    const views = page.getByRole('radiogroup', { name: 'View' })
+    for (const view of ['Justified', 'Grid', 'List', 'Masonry']) {
+      await viewOptions.click()
+      await views.getByRole('radio', { name: view, exact: true }).click()
+      await closeMenu(page)
+      await expect(headers).toHaveCount(1)
+      await expect(headers).toHaveText(`${today}3 photos · 1 video`)
+      await expect(tiles).toHaveCount(FIXTURES.length + 1)
+    }
+
+    await viewOptions.click()
+    await expect(groupByDay).toBeChecked()
+    await groupByDay.click()
+    await expect(headers).toHaveCount(0)
+    await expect(tiles).toHaveCount(FIXTURES.length + 1)
+    await closeMenu(page)
+    await page.reload()
+    await expect(tiles).toHaveCount(FIXTURES.length + 1)
+    await expect(headers).toHaveCount(0)
+    await viewOptions.click()
+    await groupByDay.click()
+    await expect(headers).toHaveCount(1)
+
+    await page.getByRole('combobox', { name: 'Sort by' }).click()
+    await page.getByRole('option', { name: 'Name' }).click()
+    await expect(groupByDay).toBeDisabled()
+    await expect(page.getByText('Only when sorted by date')).toBeVisible()
+    await expect(headers).toHaveCount(0)
+    await page.getByRole('combobox', { name: 'Sort by' }).click()
+    await page.getByRole('option', { name: 'Date taken' }).click()
+    await expect(groupByDay).toBeEnabled()
+    await expect(headers).toHaveCount(1)
+    await closeMenu(page)
+  })
+
   await test.step('REQ-013-03, REQ-013-05: the gallery scrolls under the glass toolbar; focus shows on photos', async () => {
     // At two columns the fixtures are taller than the window.
     await viewOptions.click()

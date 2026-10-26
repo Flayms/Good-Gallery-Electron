@@ -31,3 +31,27 @@ export function formatDateTime(epochMs: number, locale?: string): string {
   }
   return format.format(epochMs)
 }
+
+const dayFormats = new Map<string | undefined, Intl.DateTimeFormat>()
+
+/** Weekday and full date of a local calendar day (`YYYY-MM-DD`) in the user's locale, e.g. `Monday, October 26, 2026`. */
+export function formatDay(day: string, locale?: string): string {
+  let format = dayFormats.get(locale)
+  if (!format) {
+    format = new Intl.DateTimeFormat(locale, { dateStyle: 'full' })
+    dayFormats.set(locale, format)
+  }
+  return format.format(new Date(`${day}T00:00`))
+}
+
+function countOf(value: number, one: string, many: string, locale?: string): string {
+  return `${value.toLocaleString(locale)} ${value === 1 ? one : many}`
+}
+
+/** Media items of a date group by kind, e.g. `42 photos · 3 videos`; a kind without items is left out. */
+export function formatGroupCount(photos: number, videos: number, locale?: string): string {
+  const parts = []
+  if (photos > 0 || videos === 0) parts.push(countOf(photos, 'photo', 'photos', locale))
+  if (videos > 0) parts.push(countOf(videos, 'video', 'videos', locale))
+  return parts.join(' · ')
+}
