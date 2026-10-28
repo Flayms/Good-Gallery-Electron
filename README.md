@@ -1,5 +1,8 @@
 # Good Gallery
 
+> [!IMPORTANT]
+> This project was ported to Rust and is not supported anymore. Instead check out <https://github.com/Flayms/Good-Gallery>
+
 A desktop gallery for large photo and video libraries (50k–500k files). Media appear in a virtualized masonry, justified, grid or list view. Libraries on network shares are supported, and thumbnails are cached locally. Search uses the tags that are already embedded in your files.
 
 ![Masonry view with the sidebar showing libraries, people, places, ratings and tags](docs/screenshots/masonry.png)

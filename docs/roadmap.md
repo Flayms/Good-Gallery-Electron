@@ -1,21 +1,8 @@
 # Roadmap
 
-Ordered by priority within each section: bugs first, then features, then larger decisions. Each entry names the spec it touches (or "new spec") and its tier from [AGENTS.md](../AGENTS.md#tiers). When work starts, the entry moves into a spec in [docs/specs](specs/README.md); when it ships, remove it here.
-
-## Bugs
-
-_None open._
-
-## Next
-
-### Update detection and auto updates
-
-- **Spec:** new · **Tier:** 3 (touches release pipeline, main process and settings)
-- Tell the user when a newer release exists and install it with as little friction as possible.
-- Open questions:
-  - `electron-updater` against GitHub releases (fits [014-ci-release](specs/014-ci-release/spec.md)), or only a "new version available" notice with a link?
-  - Silent download and install on quit, or ask first? Opt-out in settings?
-  - Code signing: unsigned Windows builds trigger SmartScreen; macOS auto updates require a signed and notarized app.
+- Update detection and auto updates for the app.
+- still no license key and I dont wanna pay for one
+- publish in microsoft store
 
 ### Manual tagging and rating
 
@@ -29,40 +16,42 @@ _None open._
 
 ### Cropping and rotating
 
-- **Spec:** new · **Tier:** 3
 - Non-destructive, stored like the edits below; rotation possibly also as the EXIF orientation flag.
 - Shares the edit storage decision with [Photo editing](#photo-editing), so decide that first.
 
-## Later
-
 ### Faces
 
-- **Spec:** new · **Tier:** 3
 1. Show face regions already embedded in files (MWG / Microsoft regions, already read for People tags) as boxes in the viewer, toggleable.
 2. Face detection and recognition (as in digiKam): detect faces, cluster them, let the user name clusters, write the names back as face regions (depends on [Manual tagging](#manual-tagging-and-rating)).
 - Open questions: model and runtime (ONNX in the indexer process?), where embeddings live (index database), performance on 500k files.
 
 ### Photo editing
 
-- **Spec:** new · **Tier:** 3
 - Non-destructive: edits are stored as parameters (index database, sidecar, or both), the original stays untouched; thumbnails and the viewer show the edited result; export writes a new file.
 - Light: exposure, contrast, highlights, shadows, whites, blacks
 - Curves (RGB and per channel)
 - Color: white balance (temperature, tint), vibrance, saturation
 - Effects: grain, vignette
 - Open questions: GPU rendering in the renderer (WebGL / WebGPU) vs. sharp in the indexer; compatibility with other tools' sidecars (e.g. darktable, Lightroom XMP `crs:` tags).
+- what about color profiles / bit depth? what errors did gimp do, what can we do better?
 
-### macOS and Linux
+-mac and linux support
 
-- **Spec:** new · **Tier:** 3
-- Build, package and test on both (CI runners, e2e).
-- Known gaps: Window Controls Overlay on macOS is unverified (see [known pitfalls](known-pitfalls.md)), _Show in Explorer_ wording (REQ-009-10), native dependencies (sharp, exiftool, ffmpeg) per platform, signing and notarization.
+- Photos should be openable with this gallery over windows context menu
+  - what about mac and linux for this
 
-## Decisions to make
+---
 
-### Migrate to Rust (egui / eframe on wgpu)?
-
-- **Tier:** 3 (rewrite), needs a decision record before any plan.
-- Questions to answer first: what problem does it solve (memory, startup, scroll performance at high zoom, distribution size)? Can that be measured and fixed in the current stack? What do we lose (shadcn UI, glass via `backdrop-filter`, view transitions, Playwright e2e)?
-- If yes, a workspace split along the existing process boundaries is natural: `core` (domain, index database), `indexer` (scan, metadata, thumbnails), `app` (egui UI). More crates only where compile times or reuse demand it.
-- Should come before large new features, otherwise they are built twice.
+- light mode
+- no backend wasm browser version hosted on github pages
+- find more native alternative to exiftool for rust
+- what dependencies can we remove to make the bundle smaller?
+  - exiftool - is there something that works natively in Rust?
+  - ffmpeg - is there a native Rust alternative for video processing?
+  - libmpv - can we replace it with a Rust-native video player?
+- I want that development of this app is also possible on a linux (ubuntu) machine. what do we need to change?
+- known pitfalls got huge. what of it can / should we tackle, what information should be in other places instead?
+- I wanna be able to scroll by holding the mousewheel and then moving the cursor up / down like in a browser. current scroll works but differently than in a browser. if you need more help understanding what I mean, ask me
+- show amount of photos right next to each libraries name in the sidebar / next to each folder within a library
+- sidebar should be closable
+- the star icon for the ratings should be filled out stars (not an outlined star)
